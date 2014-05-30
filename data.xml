@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<data>
+    <dataset name="EWK_Delphes" category="Signal"  type="SIM">
+        <xsection>0.4228</xsection>
+        <file>~/CMS/Delphes-3.1.2/ZZ_EWK_13TeV_AcceptanceCuts_Delphes_312BuiltIn.root</file>
+    </dataset>
+   <dataset name="VBF_Delphes" category="VBF" type="GEN">
+        <xsection>0.3496673305</xsection>
+        <file>~/CMS/Delphes-3.1.2/ZZ_210_13TeV_AcceptanceCuts_NoPythia_Delphes312.root</file>
+    </dataset>
+    <dataset name="QCD_Delphes" category="Background"  type="GEN">
+        <xsection>4.422</xsection>
+        <file>~/CMS/Delphes-3.1.2/ZZ_QCD_13TeV_AcceptanceCuts_Delphes_312Mod.root</file>
+    </dataset>
+</data>
