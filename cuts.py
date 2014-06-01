@@ -1,6 +1,6 @@
 import logging
 from functions import *
-
+from ROOT import TH2D
 class Start :
     def __init__(self, cut_name, Histos, data_name) :
         logging.debug("Start constructor")
@@ -267,6 +267,86 @@ class ZKinematics :
 #class AcceptanceCutSet :
 #    def __init__(self, PTcut, ETAcut)
 
+class LeptonAcceptanceAnalysis :
+    def __init__(self, cut_name, Histos, data_name) :
+        self.DataName = data_name
+        logging.debug("LeptonAcceptance constructor")
+        self.name = cut_name
+        self.NumberEventsPassedCut = 0.
+
+        eta_bin = 5
+        eta_max  = 2.5
+        eta_min  = -2.5
+
+        PT_bin = 10
+        PT_max  = 300.
+        PT_min  = 0.
+
+        self.ElectronEta = TH1D(self.DataName + "ElectronEta","Number of electrons", eta_bin, eta_min, eta_max)
+        self.MuonEta = TH1D(self.DataName + "MuonEta","Number of muons",eta_bin, eta_min, eta_max)
+        self.ElectronPtEta = TH2D(self.DataName + "Electron_Pt_Eta", "Electron efficency", PT_bin, PT_min, PT_max, eta_bin, eta_min, eta_max)
+        Histos.append(self.ElectronPtEta)
+        self.MuonPtEta = TH2D(self.DataName + "Muon_Pt_Eta", "Muon efficency", PT_bin, PT_min, PT_max, eta_bin, eta_min, eta_max)
+        
+        Histos.append(self.MuonPtEta)
+        Histos.append(self.ElectronEta)
+        Histos.append(self.MuonEta)
+
+        self.ElectronPT = TH1D(self.DataName + "ElectronPT","PT of leading lepton", PT_bin, PT_min, PT_max)
+        self.MuonPT = TH1D(self.DataName + "MuonPT","PT of subleading lepton",PT_bin, PT_min, PT_max)
+
+        Histos.append(self.ElectronPT)
+        Histos.append(self.MuonPT)
+
+    def IsCut(self) :
+        return True
+
+
+
+
+    def ApplyCut(self, event, Histos, data_type) :
+        logging.debug("Called ApplyCut of " + self.name + " cut" )
+        event.Cuts[self.name] = False
+        goodMuons       = []
+        goodElectrons   = []
+
+        if data_type == "GEN" :
+            ExtractObjectsFromGenRecord(event)
+            for mu in event.GenMuon :
+                if abs(mu.Eta) < 2.4 and mu.PT > 7. :
+                    goodMuons.append(mu)
+
+            for el in event.GenElectron :
+                if abs(el.Eta) < 2.5 and el.PT > 7. :
+                    goodElectrons.append(el)
+
+        if data_type == "SIM" :
+            for mu in event.data.Muon :
+                if abs(mu.Eta) < 2.4 and mu.PT > 7. :
+                    goodMuons.append(mu)
+
+            for el in event.data.Electron :
+                if abs(el.Eta) < 2.5 and el.PT > 7. :
+                    goodElectrons.append(el)
+
+        goodLeptons = []
+        goodLeptons.extend(goodMuons)
+        goodLeptons.extend(goodElectrons)
+        goodLeptons.sort(key=lambda x: x.PT, reverse=True)
+        goodMuons.sort(key=lambda x: x.PT, reverse=True)
+        goodElectrons.sort(key=lambda x: x.PT, reverse=True)
+
+        for mu in goodMuons :
+            self.MuonPtEta.Fill(mu.PT, mu.Eta)
+            self.MuonEta.Fill(mu.Eta)
+            self.MuonPT.Fill(mu.PT)
+
+        for el in goodElectrons :
+            self.ElectronPtEta.Fill(el.PT, el.Eta)
+            self.ElectronEta.Fill(el.Eta)
+            self.ElectronPT.Fill(el.PT)
+        return True
+
 
 
 class LeptonAcceptance :
@@ -276,7 +356,7 @@ class LeptonAcceptance :
         self.name = cut_name
         self.NumberEventsPassedCut = 0.
 
-        eta_bin = 20
+        eta_bin = 56
         eta_max  = 2.8
         eta_min  = -2.8
         self.LeadingLeptonEta = TH1D(self.DataName + "LeadingLeptonEta","Eta of leading lepton", eta_bin, eta_min, eta_max)
@@ -289,7 +369,7 @@ class LeptonAcceptance :
         Histos.append(self.ThirdleadingLeptonEta)
         Histos.append(self.FourthleadingLeptonEta)
 
-        PT_bin = 100
+        PT_bin = 400
         PT_max  = 400.
         PT_min  = 0.
 
@@ -375,7 +455,11 @@ class LeptonAcceptance :
             self.FourLeptonMass.Fill(Mass)
             
             return True
-
+        else:
+                for mu in event.data.Muon :
+                    print "Muon pt: ", mu.PT , "eta: ", mu.Eta
+                for el in event.data.Electron :
+                    print "Elec PT: " , el.PT , "eta ", el.Eta
         return False
 
 class ZPair :

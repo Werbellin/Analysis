@@ -8,7 +8,7 @@ LEVELS = {'debug': logging.DEBUG,
 
 from collections import Counter#, OrderedDict
 
-from ROOT import TCanvas, TH1D, gSystem, TFile, TTree, TLorentzVector, TChain, THStack, TColor
+from ROOT import TCanvas, TH1D, TH2D, gSystem, TFile, TTree, TLorentzVector, TChain, THStack, TColor
 TH1D.SetDefaultSumw2()
 gSystem.Load('libDelphes.so')
 
@@ -36,7 +36,7 @@ class EventSelection :
 
             #self._StepList[data.name] = newStepList
             cut0 = Start("Total events processed", self.Histos[data.name], data.name)
-            cut1 = LeptonAcceptance("Lepton Acceptance Eta PT", self.Histos[data.name], data.name)
+            cut1 = LeptonAcceptanceAnalysis("Lepton Acceptance Eta PT", self.Histos[data.name], data.name)
             cut2 = ZPair("Two Z candidates", self.Histos[data.name], data.name)
             cut3 = DefineTaggingJets("DefineTaggingJets", self.Histos[data.name], data.name)
             cut4 = ZKinematics("Kinematics of Z bosons", self.Histos[data.name],data.name)
@@ -44,7 +44,7 @@ class EventSelection :
             cut6 = ZeppenfeldVar("Zeppenfeld variables", self.Histos[data.name], data.name)
             cut7 = TaggingJetInvariantMass("Invariant mass of tagging jets", self.Histos[data.name], data.name)
             cut8 = LeptonIsolation("Lepton Isolation", self.Histos[data.name], data.name)
-            newcutflow = [cut0, cut1, cut2, cut3, cut4, cut5, cut6, cut8, cut7]
+            newcutflow = [cut0, cut1]#, cut2, cut3, cut4, cut5, cut6, cut8, cut7]
             self.cutflow[data.name] = newcutflow
             #print self.cutflow
 
@@ -176,9 +176,10 @@ class EventSelection :
                 #print "Trying to retrieve",hist.GetName()[len(data.name):]
                 #print "Content of stackdir: ", stackdir
                 stack = stackdir[hist.GetName()[len(data.name):]]
-                if hist.Integral() <> 0. :
-                    hist.Scale(1.0/hist.Integral())#, "width")
-                    stack.Add(hist)
+                #if hist.Integral() <> 0. :
+                #    hist.Scale(1.0/hist.Integral())#, "width")
+                stack.Add(hist)
+
 
         for stack in stackdir.itervalues() :
             canvas = TCanvas()
