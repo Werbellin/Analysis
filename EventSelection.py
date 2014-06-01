@@ -1,4 +1,4 @@
-import logging
+import logging, copy
 
 LEVELS = {'debug': logging.DEBUG,
           'info': logging.INFO,
@@ -14,39 +14,26 @@ gSystem.Load('libDelphes.so')
 
 from cuts import *
 from Event import *
-
+from upgrade import *
 logger = logging.getLogger('log')
 
 
 class EventSelection :
-    def __init__(self, dataset) : # step_list) :
+    def __init__(self, dataset, step_list) :
         self.dataset = dataset
         logger.debug("EventSelection constructor called")
         self.ROOTFile = TFile("EventSelection.root","RECREATE");
-        self.cutflow = {}
         self.Histos = {}
         self.currentDataset = None
         self.luminosity = 100.
-
+        self._StepList = {}
         for data in dataset :
-            self.Histos[data.name] =[]
-            #newStepList = copy.deepcopy(step_list)
-            #for step in newSte :
-            #    step.Initialize(self.Histos[data.name], data.name)
+            self.Histos[data.name] = []
+            newStepList = copy.deepcopy(step_list)
+            for step in newStepList :
+                step.Initialize(self.Histos[data.name], data.name)
 
-            #self._StepList[data.name] = newStepList
-            cut0 = Start("Total events processed", self.Histos[data.name], data.name)
-            cut1 = LeptonAcceptanceAnalysis("Lepton Acceptance Eta PT", self.Histos[data.name], data.name)
-            cut2 = ZPair("Two Z candidates", self.Histos[data.name], data.name)
-            cut3 = DefineTaggingJets("DefineTaggingJets", self.Histos[data.name], data.name)
-            cut4 = ZKinematics("Kinematics of Z bosons", self.Histos[data.name],data.name)
-            cut5 = ZJetsKinematics("Kinematics of TJ1 and L1/2", self.Histos[data.name], data.name)
-            cut6 = ZeppenfeldVar("Zeppenfeld variables", self.Histos[data.name], data.name)
-            cut7 = TaggingJetInvariantMass("Invariant mass of tagging jets", self.Histos[data.name], data.name)
-            cut8 = LeptonIsolation("Lepton Isolation", self.Histos[data.name], data.name)
-            newcutflow = [cut0, cut1]#, cut2, cut3, cut4, cut5, cut6, cut8, cut7]
-            self.cutflow[data.name] = newcutflow
-            #print self.cutflow
+            self._StepList[data.name] = newStepList
 
     def ChangeDataSet(self, dataset_name) :
         self.currentDataset = dataset_name
@@ -63,11 +50,11 @@ class EventSelection :
         self.BeginSelection(data_type)
 
     def BeginSelection(self, data_type) :
-        for cut in self.cutflow[self.currentDataset] :
-            if cut.ApplyCut(self.event, self.Histos[self.currentDataset], data_type) :
-                logger.debug("Event passed " + cut.name)
+        for step in self._StepList[self.currentDataset] :
+            if step.PerformStep(self.event, self.Histos[self.currentDataset], data_type) :
+                logger.debug("Event passed " + step.name)
             else :
-                logger.debug("Event failed cut " + cut.name)
+                logger.debug("Event failed cut " + step.name)
                 return True
 
     def GetEfficencies(self) :
@@ -77,7 +64,7 @@ class EventSelection :
         signal = {}
         background = {}
         significance = []
-        for step in self.cutflow[self.currentDataset] :
+        for step in self._StepList[self.currentDataset] :
             data = (step.name, 0.)
             signal[step.name]= 0.
             background[step.name] = 0.
@@ -99,7 +86,7 @@ class EventSelection :
             print item.name
 
         for data in SignalData :
-            for step in self.cutflow[data.name] :
+            for step in self._StepList[data.name] :
                 #print "Sig ", step.name, step.NumberEventsPassedCut / data.totalNumberEvents
                 #for k,v in signal :
                  #   if k == step.name :
@@ -108,7 +95,7 @@ class EventSelection :
                 signal[step.name] += step.NumberEventsPassedCut / data.totalNumberEvents * data.xsection
                     
         for data in BackgroundData :
-            for step in self.cutflow[data.name] :
+            for step in self._StepList[data.name] :
                 #for k,v in background :
                  #   if k == step.name :
                 #        v += step.NumberEventsPassedCut / data.totalNumberEvents * data.xsection               
@@ -117,7 +104,7 @@ class EventSelection :
                 #print "BG ", step.name, step.NumberEventsPassedCut / data.totalNumberEvents
                 background[step.name] += step.NumberEventsPassedCut / data.totalNumberEvents * data.xsection
 
-        for step in self.cutflow[self.currentDataset] :
+        for step in self._StepList[self.currentDataset] :
             s = signal[step.name]
             b = math.sqrt(background[step.name]) * math.sqrt(self.luminosity)
             if b <> 0. :
@@ -135,8 +122,8 @@ class EventSelection :
             template = "{0:40}|{1:10}|{2:10}|{3:10}" # column widths: 8, 10, 15, 7, 10
             print template.format("Cut name", "Passed", "abs.diff", "rel. diff") # header
 
-            for previous, item, nxt in previous_and_next(self.cutflow[data.name]):
-                if True : #item.IsCut() :
+            for previous, item, nxt in previous_and_next(self._StepList[data.name]):
+                if isinstance(item, Cut) :
                     diff = 0.
                     rel_diff = 0.
                     if previous is not None : 

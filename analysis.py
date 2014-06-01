@@ -79,7 +79,21 @@ for dataset in root.findall('dataset') :
 
 print "Finished reading data.xml"
 
-mEventSelection = EventSelection(RunData)
+cut0 = Start("Total events processed")
+cut1 = LeptonAcceptance("Lepton Acceptance Eta PT")
+cut2 = ZPair("Two Z candidates")
+cut3 = DefineTaggingJets("DefineTaggingJets")
+cut4 = ZKinematics("Kinematics of Z bosons")
+cut5 = ZJetsKinematics("Kinematics of TJ1 and L1/2")
+cut6 = ZeppenfeldVar("Zeppenfeld variables")
+cut7 = TaggingJetInvariantMass("Invariant mass of tagging jets")
+cut8 = LeptonIsolation("Lepton Isolation")
+cut9 = LeptonsBetweenTaggingJetsEta("Leptons between tagging jets")
+newStepList = [cut0, cut1, cut2, cut3, cut4, cut5, cut6, cut8, cut7, cut9]
+
+
+
+mEventSelection = EventSelection(RunData, newStepList)
 
 for data in RunData:
     chain = TChain("Delphes")
@@ -99,6 +113,8 @@ for data in RunData:
         chain.GetEntry(eventNumber)
         #event = Event(chain)
         mEventSelection.ProcessEvent(chain, data.type)
+
+
 
 mEventSelection.PrintCutflow()
 mEventSelection.GetEfficencies()

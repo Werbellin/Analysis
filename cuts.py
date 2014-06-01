@@ -1,33 +1,59 @@
 import logging
 from functions import *
 from ROOT import TH2D
-class Start :
-    def __init__(self, cut_name, Histos, data_name) :
-        logging.debug("Start constructor")
-        self.name = cut_name
-        self.DataName = data_name
+import numpy as np
+class Cut :
+    def __init__(self) :    
+       logging.debug("Cut base class constructor")
+
+class LeptonsBetweenTaggingJetsEta(Cut) :
+    def __init__(self, step_name) :
+        self.name = step_name
         self.NumberEventsPassedCut = 0.
+
+    def Initialize(self, Histos, data_name) :
+        self.DataName = data_name
 
     def IsCut(self) :
         return True
 
-    def ApplyCut(self, event, Histos, data_type) :
+    def PerformStep(self, event, Histos, data_type) :
         logging.debug("Called ApplyCut of " + self.name + " cut" )
-        event.Cuts[self.name] = True
-        self.NumberEventsPassedCut += 1.
-        return True
+        eta_max = max(event.TaggingJet1.Eta(), event.TaggingJet2.Eta())
+        eta_min = min(event.TaggingJet1.Eta(), event.TaggingJet2.Eta())
 
-class LeptonIsolation :
-    def __init__(self, cut_name, Histos, data_name) :
+        result = True
+        leptonsFromZ = []
+        leptonsFromZ.extend(event.Z1Particles)
+        leptonsFromZ.extend(event.Z2Particles)
+        print leptonsFromZ
+        print eta_min, "max: ", eta_max
+        for lepton in leptonsFromZ :
+            print lepton.Eta()
+            if lepton.Eta() <= eta_max and lepton.Eta() >= eta_min :
+                result *= True
+            else :
+                result *= False
+        if result == True :
+            self.NumberEventsPassedCut += 1.0
+            return True
+        else :
+            return False
+
+
+class LeptonIsolation(Cut) :
+    def __init__(self, step_name) :
         logging.debug("LeptonIsolation constructor")
-        self.name = cut_name
-        self.DataName = data_name
+        self.name = step_name
         self.NumberEventsPassedCut = 0.
+
+    def Initialize(self, Histos, data_name) :
+        self.DataName = data_name
 
     def IsCut(self) :
         return True
 
-    def ApplyCut(self, event, Histos, data_type) :
+    def PerformStep(self, event, Histos, data_type) :
         logging.debug("Called ApplyCut of " + self.name + " cut" )
         for lepton1 in event.goodLeptons :
             for lepton2 in event.goodLeptons :
@@ -40,46 +66,13 @@ class LeptonIsolation :
         return True
 
 
-class ZJetsKinematics :
-    def __init__(self, cut_name, Histos, data_name) :
-        self.DataName = data_name
-        logging.debug("ZJetsKinematics constructor")
-        self.name = cut_name
-        self.NumberEventsPassedCut = 0.
-        R_bin = 40
-        R_max  = 8
-        R_min  = 0.
-        
-        self.RJ1L1 = TH1D(self.DataName + "R_J1_L1","R difference of leading tagging jet and leading lepton", R_bin, R_min, R_max)
-        self.RJ1L2 = TH1D(self.DataName + "R_J1_L2","R difference of leading tagging jet and subleading lepton",R_bin, R_min, R_max)
-
-        Histos.append(self.RJ1L1)
-        Histos.append(self.RJ1L2)
-    def IsCut(self) :
-        return False
-
-
-    def ApplyCut(self, event, Histos, data_type) :
-        logging.debug("Called ApplyCut of " + self.name + " cut" )
-        event.Cuts[self.name] = False
-        self.NumberEventsPassedCut += 1.
-
-        J1 = event.goodJets[0]
-        L1 = event.goodLeptons[0]
-        L2 = event.goodLeptons[1]
-
-        self.RJ1L1.Fill(dR(J1, L1))
-        self.RJ1L2.Fill(dR(J1, L2))
-
-        return True
-
-class DefineTaggingJets :
-    def __init__(self, cut_name, Histos, data_name) :
-        self.DataName = data_name
+class DefineTaggingJets(Cut) :
+    def __init__(self, step_name) :
         logging.debug("Tagging jets constructor")
-        self.name = cut_name
+        self.name = step_name
         self.NumberEventsPassedCut = 0.
-
+    def Initialize(self, Histos, data_name) :
+        self.DataName = data_name
         M_bin = 100
         M_min = 0.
         M_max = 2000.
@@ -120,7 +113,7 @@ class DefineTaggingJets :
     def IsCut(self) :
         return True
 
-    def ApplyCut(self, event, Histos, data_type) :
+    def PerformStep(self, event, Histos, data_type) :
         logging.debug("Called ApplyCut of " + self.name + " cut" + "in mode " + data_type )
         event.Cuts[self.name] = False
 
@@ -159,18 +152,19 @@ class DefineTaggingJets :
             return True
         return False
 
-class TaggingJetInvariantMass :
-    def __init__(self, cut_name, Histos, data_name) :
-        self.DataName = data_name
+class TaggingJetInvariantMass(Cut) :
+    def __init__(self, step_name) :
         logging.debug("TaggingJetInvariantMass constructor")
-        self.name = cut_name
+        self.name = step_name
         self.NumberEventsPassedCut = 0.
+
+    def Initialize(self, Histos, data_name) :
+        self.DataName = data_name
 
     def IsCut(self) :
         return True
-    def ApplyCut(self, event, Histos, data_type) :
+    def PerformStep(self, event, Histos, data_type) :
         logging.debug("Called ApplyCut of " + self.name + " cut" )
-        
         mass = (event.TaggingJet1 + event.TaggingJet2).M()
         if mass > 800. :
             event.Cuts[self.name] = True
@@ -182,98 +176,14 @@ class TaggingJetInvariantMass :
 
         return True
 
-
-
-
-class ZeppenfeldVar :
-    def __init__(self, cut_name, Histos, data_name) :
-        self.DataName = data_name
-        logging.debug("Zeppenfeld constructor")
-        self.name = cut_name
-        self.NumberEventsPassedCut = 0.
-
-        Y1Star_bin = 30
-        Y1Star_max  = 4.8
-        Y1Star_min  = 4.8
-        self.Y1Star = TH1D(self.DataName + "Y1Star","y* of Z_1", Y1Star_bin, Y1Star_min, Y1Star_max)
-
-        Histos.append(self.Y1Star)
-
-        Y2Star_bin = 30
-        Y2Star_max  = 4.8
-        Y2Star_min  = 4.8
-        self.Y2Star = TH1D(self.DataName + "Y2Star","y* of Z_2", Y2Star_bin, Y2Star_min, Y2Star_max)
-
-        Histos.append(self.Y2Star)
-
-
-    def IsCut(self) :
-        return True
-    def ApplyCut(self, event, Histos, data_type) :
-        logging.debug("Called ApplyCut of " + self.name + " cut" )
-        event.Cuts[self.name] = True
-        self.NumberEventsPassedCut += 1.
-
-        Y1Star = event.Z1.Rapidity() - 0.5*(event.TaggingJet1.Rapidity() + event.TaggingJet2.Rapidity())
-        Y2Star = event.Z2.Rapidity() - 0.5*(event.TaggingJet1.Rapidity() + event.TaggingJet2.Rapidity())
-
-        self.Y1Star.Fill(Y1Star)
-        self.Y2Star.Fill(Y2Star)
-        return True
-
-
-
-
-class ZKinematics :
-    def __init__(self, cut_name, Histos, data_name) :
-        self.DataName = data_name
-        logging.debug("Zkinematics constructor")
-        self.name = cut_name
-        self.NumberEventsPassedCut = 0.
-
-        eta_bin = 30
-        eta_max  = 4.8
-        eta_min  = 4.8
-        self.Z1Eta = TH1D(self.DataName + "Z1Eta","Eta of Z_1", eta_bin, eta_min, eta_max)
-        self.Z2Eta = TH1D(self.DataName + "Z2Eta","Eta of Z_1",eta_bin, eta_min, eta_max)
-
-        Histos.append(self.Z1Eta)
-        Histos.append(self.Z2Eta)
-
-        PT_bin = 100
-        PT_max  = 100.
-        PT_min  = 0.
-
-        self.Z1PT = TH1D(self.DataName + "Z1PT","PT of Z_1", PT_bin, PT_min, PT_max)
-        self.Z2PT = TH1D(self.DataName + "Z2PT","PT of Z_2",PT_bin, PT_min, PT_max)
-
-        Histos.append(self.Z1PT)
-        Histos.append(self.Z2PT)
-
-    def IsCut(self) :
-        return False
-    def ApplyCut(self, event, Histos, data_type) :
-        logging.debug("Called ApplyCut of " + self.name + " cut" )
-        event.Cuts[self.name] = False
-        self.NumberEventsPassedCut += 1.
-
-        self.Z1Eta.Fill(event.Z1.Eta())
-
-        self.Z1PT.Fill(event.Z1.Eta())
-        return True
-
-
-
-#class AcceptanceCutSet :
-#    def __init__(self, PTcut, ETAcut)
-
-class LeptonAcceptanceAnalysis :
-    def __init__(self, cut_name, Histos, data_name) :
-        self.DataName = data_name
+class LeptonAcceptanceAnalysis(Cut) :
+    def __init__(self, step_name) :
         logging.debug("LeptonAcceptance constructor")
-        self.name = cut_name
+        self.name = step_name
         self.NumberEventsPassedCut = 0.
 
+    def Initialize(self, Histos, data_name) :
+        self.DataName = data_name
         eta_bin = 5
         eta_max  = 2.5
         eta_min  = -2.5
@@ -301,10 +211,7 @@ class LeptonAcceptanceAnalysis :
     def IsCut(self) :
         return True
 
-
-
-
-    def ApplyCut(self, event, Histos, data_type) :
+    def PerformStep(self, event, Histos, data_type) :
         logging.debug("Called ApplyCut of " + self.name + " cut" )
         event.Cuts[self.name] = False
         goodMuons       = []
@@ -349,13 +256,14 @@ class LeptonAcceptanceAnalysis :
 
 
 
-class LeptonAcceptance :
-    def __init__(self, cut_name, Histos, data_name) :
-        self.DataName = data_name
+class LeptonAcceptance(Cut) :
+    def __init__(self, step_name) :
         logging.debug("LeptonAcceptance constructor")
-        self.name = cut_name
+        self.name = step_name
         self.NumberEventsPassedCut = 0.
 
+    def Initialize(self, Histos, data_name) :
+        self.DataName = data_name
         eta_bin = 56
         eta_max  = 2.8
         eta_min  = -2.8
@@ -363,7 +271,6 @@ class LeptonAcceptance :
         self.SubleadingLeptonEta = TH1D(self.DataName + "SubleadingLeptonEta","Eta of subleading lepton",eta_bin, eta_min, eta_max)
         self.ThirdleadingLeptonEta = TH1D(self.DataName + "ThirdleadingLeptonEta","Eta of third lepton",eta_bin, eta_min, eta_max)
         self.FourthleadingLeptonEta = TH1D(self.DataName + "FourthleadingLeptonEta","Eta of fourth lepton",eta_bin, eta_min, eta_max)
-
         Histos.append(self.LeadingLeptonEta)
         Histos.append(self.SubleadingLeptonEta)
         Histos.append(self.ThirdleadingLeptonEta)
@@ -393,10 +300,7 @@ class LeptonAcceptance :
     def IsCut(self) :
         return True
 
-
-
-
-    def ApplyCut(self, event, Histos, data_type) :
+    def PerformStep(self, event, Histos, data_type) :
         logging.debug("Called ApplyCut of " + self.name + " cut" )
         event.Cuts[self.name] = False
         goodMuons       = []
@@ -451,9 +355,7 @@ class LeptonAcceptance :
             self.SubleadingLeptonPT.Fill(goodLeptons[1].PT)
             self.ThirdleadingLeptonPT.Fill(goodLeptons[2].PT)
             self.FourthleadingLeptonPT.Fill(goodLeptons[3].PT)
-            
             self.FourLeptonMass.Fill(Mass)
-            
             return True
         else:
                 for mu in event.data.Muon :
@@ -462,16 +364,18 @@ class LeptonAcceptance :
                     print "Elec PT: " , el.PT , "eta ", el.Eta
         return False
 
-class ZPair :
-    def __init__(self, cut_name, Histos, data_name) :
-        self.DataName = data_name
-        self.name = cut_name
+class ZPair(Cut) :
+    def __init__(self, step_name) :
+        self.name = step_name
         self.NumberEventsPassedCut = 0.
+
+    def Initialize(self, Histos, data_name) :
+        self.DataName = data_name
+
     def IsCut(self) :
         return True
 
-
-    def ApplyCut(self, event, Histos, data_type) :
+    def PerformStep(self, event, Histos, data_type) :
         logging.debug("Called ApplyCut of " + self.name + " cut")
         event.Cuts[self.name] = False
 
@@ -479,7 +383,6 @@ class ZPair :
         pos_electrons   = SeperateByCharge(1,event.goodElectrons)
         neg_muons       = SeperateByCharge(-1,event.goodMuons)
         neg_electrons   = SeperateByCharge(-1,event.goodElectrons)
-
 
         if ((len(neg_muons) >= 2 and len(pos_muons) >= 2) or
             (len(neg_electrons) >= 2 and len(pos_electrons) >= 2) or
