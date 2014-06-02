@@ -25,7 +25,7 @@ gSystem.Load('libDelphes.so')
 from itertools import tee, islice, chain, izip
 
 def update_progress(progress):
-    barLength = 10 # Modify this to change the length of the progress bar
+    barLength = 50 # Modify this to change the length of the progress bar
     status = ""
     if isinstance(progress, int):
         progress = float(progress)
@@ -104,7 +104,7 @@ def ExtractObjectsFromGenRecord(event) :
 
 
 def dR(object1, object2) :
-    dR = math.sqrt( (object1.Eta - object2.Eta)**2  + (object1.Phi - object2.Phi)**2)
+    dR = math.sqrt( (object1.Eta() - object2.Eta())**2  + (object1.Phi() - object2.Phi())**2)
     return dR;
 
 def M(object1, object2) :

@@ -22,13 +22,13 @@ LEVELS = {'debug': logging.DEBUG,
 
 from collections import Counter#, OrderedDict
 
-from ROOT import TCanvas, TH1D, TH2D, gSystem, TFile, TTree, TLorentzVector, TChain, THStack, TColor
+from ROOT import TCanvas, TH1D, TH2D, gROOT, gSystem, TFile, TTree, TLorentzVector, TChain, THStack, TColor
 TH1D.SetDefaultSumw2()
 gSystem.Load('libDelphes.so')
-
+#gROOT.ProcessLine("gErrorIgnoreLevel = 2001;")
 from cuts import *
 from EventSelection import *
-
+from step import *
 if len(sys.argv) > 1:
     level_name = sys.argv[1]
     level = LEVELS.get(level_name, logging.NOTSET)
@@ -37,7 +37,7 @@ if len(sys.argv) > 1:
 logger = logging.getLogger('log')
 
 logging.debug("Opening XML datafile")
-tree = ET.parse('test.xml')
+tree = ET.parse('data.xml')
 root = tree.getroot()
 
 class Data :
@@ -80,16 +80,22 @@ for dataset in root.findall('dataset') :
 print "Finished reading data.xml"
 
 cut0 = Start("Total events processed")
-cut1 = LeptonAcceptance("Lepton Acceptance Eta PT")
-cut2 = ZPair("Two Z candidates")
-cut3 = DefineTaggingJets("DefineTaggingJets")
+cut1 = LeptonDefinitionCut("Lepton Acceptance Eta PT")
+cut2 = ZPairDefinitionCut("Two Z candidates")
+cut3 = DefineTaggingJetsCut("DefineTaggingJets")
 cut4 = ZKinematics("Kinematics of Z bosons")
 cut5 = ZJetsKinematics("Kinematics of TJ1 and L1/2")
 cut6 = ZeppenfeldVar("Zeppenfeld variables")
-cut7 = TaggingJetInvariantMass("Invariant mass of tagging jets")
-cut8 = LeptonIsolation("Lepton Isolation")
-cut9 = LeptonsBetweenTaggingJetsEta("Leptons between tagging jets")
-newStepList = [cut0, cut1, cut2, cut3, cut4, cut5, cut6, cut8, cut7, cut9]
+cut7 = TaggingJetInvariantMassCut("Invariant mass of tagging jets")
+cut11 = TaggingJetY1Y2Cut("Cut on taggign jet rapidity product")
+cut8 = LeptonIsolationCut("Lepton Isolation")
+cut9 = LeptonsBetweenTaggingJetsEtaCut("Leptons between tagging jets")
+cut10 = TaggingJetRapidityGapCut("Tagging jet rapidity gap > 1.8")
+
+TJMassPlot1 = TaggingJetMassPlot("TaggingJetMass")
+TJMassPlot2 = TaggingJetMassPlot("TaggingJetMass")
+LeptonRPlot1 = LeptonIsolationPlot("R of Z Leptons")
+newStepList = [cut0, cut1, cut2, LeptonRPlot1, cut3, TJMassPlot1, cut4, cut5, cut6, cut10, cut7,TJMassPlot2, cut9]
 
 
 
