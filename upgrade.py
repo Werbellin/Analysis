@@ -2,23 +2,6 @@ import logging
 
 from functions import *
 from ROOT import TH1D, TH2D
-class Start :
-    def __init__(self, step_name) :
-        logging.debug("Start constructor")
-        self.name = step_name
-        self.NumberEventsPassedCut = 0.
-
-    def Initialize(self, Histos, data_name, cut_flow) :
-        self.DataName = data_name
-
-    def IsCut(self) :
-        return True
-
-    def PerformStep(self, event, Histos, data_type) :
-        logging.debug("Called ApplyCut of " + self.name + " cut" )
-        event.Cuts[self.name] = True
-        self.NumberEventsPassedCut += 1.
-        return True
 
 class ZJetsKinematics :
     def __init__(self, step_name) :

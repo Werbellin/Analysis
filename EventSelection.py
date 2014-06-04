@@ -1,3 +1,5 @@
+#!/usr/local/bin/python
+# -*- coding: utf-8 -*-
 import logging, copy
 
 LEVELS = {'debug': logging.DEBUG,
@@ -23,7 +25,7 @@ class EventSelection :
     def __init__(self, dataset, step_list) :
         self.dataset = dataset
         logger.debug("EventSelection constructor called")
-        self.ROOTFile = TFile("EventSelection.root","RECREATE");
+        self.ROOTFile = TFile("output/A-Result.root","RECREATE");
         self.Histos = {}
         self.currentDataset = None
         self.luminosity = 100.
@@ -65,8 +67,12 @@ class EventSelection :
                 return True
 
     def GetEfficencies(self) :
-        print "Efficiency of cuts on Background suppression"
-
+        width = 65
+        str_double = "=" * width
+        str_single = "-" * width
+        print str_double
+        print "Cutflow efficency analysis"
+        print str_single
         data = ("", 0.)
         signal = {}
         background = {}
@@ -94,21 +100,10 @@ class EventSelection :
 
         for data in SignalData :
             for step in self._CutList[data.name] :
-                #print "Sig ", step.name, step.NumberEventsPassedCut / data.totalNumberEvents
-                #for k,v in signal :
-                 #   if k == step.name :
-                  #      v += step.NumberEventsPassedCut / data.totalNumberEvents * data.xsection
-                
                 signal[step.name] += step.NumberEventsPassedCut / data.totalNumberEvents * data.xsection
-                    
+
         for data in BackgroundData :
             for step in self._CutList[data.name] :
-                #for k,v in background :
-                 #   if k == step.name :
-                #        v += step.NumberEventsPassedCut / data.totalNumberEvents * data.xsection               
-
-                #item for item in a if item[0] == step.number
-                #print "BG ", step.name, step.NumberEventsPassedCut / data.totalNumberEvents
                 background[step.name] += step.NumberEventsPassedCut / data.totalNumberEvents * data.xsection
 
         for step in self._CutList[self.currentDataset] :
@@ -118,30 +113,44 @@ class EventSelection :
                 significance.append( (step.name, s / b))
             else:
                 significance.append((step.name, -1))
-            
-        for k in significance :
-            print k
 
-    def PrintCutflow(self) :    
+        template = "{0:40}|{1:25}"
+        print str_single
+        print template.format("Cut name", "S/√B @ " + "{:3.2f}".format(self.luminosity) + "fb⁻¹")
+        print str_single
+        significanceFormated = []
+        for tuple in significance :
+            temp = (tuple[0], "{:4.2f}".format(tuple[1]))
+            significanceFormated.append(temp)
+        for tuple in significanceFormated :
+            print template.format(*tuple)
+        print str_double
+
+    def PrintCutflow(self) :
+        width = 100
+        str_double = "=" * width
+        str_single = "-" * width
+        print str_double
         for data in self.dataset :
-            print "========================================================="
             print "Cutflow for the ", data.name, " dataset:"
-            template = "{0:40}|{1:10}|{2:10}|{3:10}" # column widths: 8, 10, 15, 7, 10
-            print template.format("Cut name", "Passed", "abs.diff", "rel. diff") # header
-
+            template = "{0:40}|{1:15}|{2:15}|{3:15}|{4:15}" # column widths: 8, 10, 15, 7, 10
+            print str_single
+            print template.format("Cut name", "Passed","@"+ "{:3.1f}".format(self.luminosity) + "fb-1", "abs.diff", "rel. diff") # header
+            print str_single
             for previous, item, nxt in previous_and_next(self._CutList[data.name]):
                 diff = 0.
                 rel_diff = 0.
-                if previous is not None : 
+                if previous is not None :
                     diff = - (previous.NumberEventsPassedCut - item.NumberEventsPassedCut)
-                    if previous.NumberEventsPassedCut <> 0. : 
+                    if previous.NumberEventsPassedCut <> 0. :
                        rel_diff = diff/previous.NumberEventsPassedCut * 100.
 
-                tuple = (item.name, item.NumberEventsPassedCut, "{:10.2f}".format(diff) , "{:10.1f}".format(rel_diff))
+                evtNumberMCFile = item.NumberEventsPassedCut
+                evtNumberActual = item.NumberEventsPassedCut / data.totalNumberEvents * data.xsection * self.luminosity
+                tuple = (item.name, evtNumberMCFile, "{:10.3f}".format(evtNumberActual) , "{:10.2f}".format(diff) , "{:10.1f}".format(rel_diff))
                 print template.format(*tuple)
-        print "========================================================="
-
-    def Finalize(self) :    
+            print str_single
+    def Finalize(self) :
         for data in self.dataset :
         #self.currentDataset = dataset_name
             data_dir = self.ROOTFile.mkdir(data.name)
@@ -179,7 +188,7 @@ class EventSelection :
             stack.Draw("nostack")
             canvas.BuildLegend()
             #stack.Draw("nostack")
-            canvas.SaveAs("output//" + stack.GetName() + ".pdf")
+            canvas.Print("output//" + stack.GetName() + ".pdf")
             
             stack.Write()
 

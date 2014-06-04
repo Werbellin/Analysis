@@ -11,6 +11,69 @@ class Cut(Step) :
     def Initialize(self, Histos, data_name, cut_flow) :
         super(Cut, self).Initialize(data_name, cut_flow)
 
+class Start(Cut) :
+    def __init__(self, step_name) :
+        super(Start, self).__init__(step_name)
+        self.CutAbbreviation = ""
+    def Initialize(self, Histos, data_name, cut_flow) :
+        super(Start,self).Initialize(Histos, data_name, cut_flow)
+
+    def PerformStep(self, event, Histos, data_type) :
+        logging.debug("Called ApplyCut of " + self.name + " cut" )
+        self.NumberEventsPassedCut += 1.0
+        return True
+
+
+class ZeppenfeldVariableCut(Cut) :
+    def __init__(self, step_name) :
+        super(ZeppenfeldVariableCut, self).__init__(step_name)
+        self.CutAbbreviation = "YSTAR"
+    def Initialize(self, Histos, data_name, cut_flow) :
+        super(ZeppenfeldVariableCut,self).Initialize(Histos, data_name, cut_flow)
+
+    def PerformStep(self, event, Histos, data_type) :
+        logging.debug("Called ApplyCut of " + self.name + " cut" )
+
+        if abs(event.Y1Star) >= 0.2 :
+            self.NumberEventsPassedCut += 1.0
+            return True
+        else :
+            return False
+
+class JetVetoCut(Cut) :
+    def __init__(self, step_name) :
+        super(JetVetoCut, self).__init__(step_name)
+        self.CutAbbreviation = "JVeto"
+    def Initialize(self, Histos, data_name, cut_flow) :
+        super(JetVetoCut,self).Initialize(Histos, data_name, cut_flow)
+
+    def PerformStep(self, event, Histos, data_type) :
+        logging.debug("Called ApplyCut of " + self.name + " cut" )
+
+        TJ_max = max(event.TaggingJet1.Eta(), event.TaggingJet2.Eta())
+        TJ_min = min(event.TaggingJet1.Eta(), event.TaggingJet2.Eta())
+        Tracker_eta_max = 2.5
+        Tracker_eta_min = -2.5
+        if TJ_max < Tracker_eta_max:
+            eta_max = TJ_max
+        else :
+            eta_max = Tracker_eta_max
+        if TJ_min < Tracker_eta_min :
+            eta_min = Tracker_eta_min
+        else:
+            eta_min = TJ_min
+        #print eta_min , " max: ", eta_max
+ 
+        if data_type == "SIM" :
+            for jet in event.data.Jet :
+                if jet <> event.TaggingJet1Pointer and jet <> event.TaggingJet2Pointer :
+                    #print "eta: ", jet.Eta, " pt ", jet.PT
+                    if jet.PT > 25. and jet.Eta > eta_min and jet.Eta < eta_max :
+                        #print "Event failed cut"
+                        return False
+        self.NumberEventsPassedCut += 1.0
+        return True
+
 
 class TaggingJetY1Y2Cut(Cut) :
     def __init__(self, step_name) :
@@ -108,7 +171,9 @@ class DefineTaggingJetsCut(Cut) :
             TaggingJet1 = goodJets[0]
             TaggingJet2 = goodJets[1]
             event.TaggingJet1 = TaggingJet1.P4()
+            event.TaggingJet1Pointer = TaggingJet1
             event.TaggingJet2 = TaggingJet2.P4()
+            event.TaggingJet2Pointer = TaggingJet2
             event.goodJets = goodJets
             self.NumberEventsPassedCut += 1.0
 
@@ -116,6 +181,8 @@ class DefineTaggingJetsCut(Cut) :
             gap = abs(TaggingJet1.P4().Rapidity() - TaggingJet2.P4().Rapidity())
 
             DPhi = abs(TaggingJet1.Phi - TaggingJet2.Phi)
+            EtaSum = TaggingJet1.Eta + TaggingJet2.Eta
+            event.TaggingJetEtaSum = EtaSum
             event.TaggingJetDPhi = DPhi
             event.TaggingJetY1Y2 = rapidity_product
             event.TaggingJetRapidityGap = gap
@@ -141,6 +208,28 @@ class TaggingJetRapidityGapCut(Cut) :
             return False
 
         return True
+
+class TaggingJetSumEtaCut(Cut) :
+    def __init__(self, step_name) :
+        super(TaggingJetSumEtaCut, self).__init__(step_name)
+        self.CutAbbreviation = "TJSETA"
+
+    def Initialize(self, Histos, data_name, cut_flow) :
+        super(TaggingJetSumEtaCut, self).Initialize(Histos, data_name, cut_flow)
+
+    def PerformStep(self, event, Histos, data_type) :
+        logging.debug("Called ApplyCut of " + self.name + " cut" )
+        etaSum = event.TaggingJet1.Eta() + event.TaggingJet2.Eta()
+        if etaSum > -380. :
+            event.Cuts[self.name] = True
+            self.NumberEventsPassedCut += 1.
+            return True
+        else :
+            event.Cuts[self.name] = False
+            return False
+
+        return True
+
 
 
 class TaggingJetInvariantMassCut(Cut) :
@@ -208,11 +297,11 @@ class LeptonAcceptanceAnalysis(Cut) :
         if data_type == "GEN" :
             ExtractObjectsFromGenRecord(event)
             for mu in event.GenMuon :
-                if abs(mu.Eta) < 2.4 and mu.PT > 7. :
+                if abs(mu.Eta) < 6.6 and mu.PT > .1 :
                     goodMuons.append(mu)
 
             for el in event.GenElectron :
-                if abs(el.Eta) < 2.5 and el.PT > 7. :
+                if abs(el.Eta) < 6.6 and el.PT > .1 :
                     goodElectrons.append(el)
 
         if data_type == "SIM" :
@@ -252,39 +341,6 @@ class LeptonDefinitionCut(Cut) :
     def Initialize(self, Histos, data_name, cut_flow) :
         super(LeptonDefinitionCut, self).Initialize(Histos, data_name, cut_flow)
 
-        eta_bin = 56
-        eta_max  = 2.8
-        eta_min  = -2.8
-        self.LeadingLeptonEta = TH1D(self.DataName +self.Cutflow+ "LeadingLeptonEta","Eta of leading lepton", eta_bin, eta_min, eta_max)
-        self.SubleadingLeptonEta = TH1D(self.DataName +self.Cutflow+ "SubleadingLeptonEta","Eta of subleading lepton",eta_bin, eta_min, eta_max)
-        self.ThirdleadingLeptonEta = TH1D(self.DataName +self.Cutflow+ "ThirdleadingLeptonEta","Eta of third lepton",eta_bin, eta_min, eta_max)
-        self.FourthleadingLeptonEta = TH1D(self.DataName +self.Cutflow+ "FourthleadingLeptonEta","Eta of fourth lepton",eta_bin, eta_min, eta_max)
-        Histos.append(self.LeadingLeptonEta)
-        Histos.append(self.SubleadingLeptonEta)
-        Histos.append(self.ThirdleadingLeptonEta)
-        Histos.append(self.FourthleadingLeptonEta)
-
-        PT_bin = 400
-        PT_max  = 400.
-        PT_min  = 0.
-
-        self.LeadingLeptonPT = TH1D(self.DataName +self.Cutflow+ "LeadingLeptonPT","PT of leading lepton", PT_bin, PT_min, PT_max)
-        self.SubleadingLeptonPT = TH1D(self.DataName +self.Cutflow+ "SubleadingLeptonPT","PT of subleading lepton",PT_bin, PT_min, PT_max)
-        self.ThirdleadingLeptonPT = TH1D(self.DataName +self.Cutflow+ "ThirdleadingLeptonPT","PT of third lepton",PT_bin, PT_min, PT_max)
-        self.FourthleadingLeptonPT = TH1D(self.DataName +self.Cutflow+ "FourthleadingLeptonPT","PT of fourth lepton",PT_bin, PT_min, PT_max)
-
-        Histos.append(self.LeadingLeptonPT)
-        Histos.append(self.SubleadingLeptonPT)
-        Histos.append(self.ThirdleadingLeptonPT)
-        Histos.append(self.FourthleadingLeptonPT)
-
-        M_bin = 40
-        M_min = 0.
-        M_max = 800.
-        self.FourLeptonMass = TH1D(self.DataName +self.Cutflow+ "FourLeptonMass","Mass of 4 lepton system",M_bin, M_min, M_max)
-
-        Histos.append(self.FourLeptonMass)
-
     def PerformStep(self, event, Histos, data_type) :
         logging.debug("Called ApplyCut of " + self.name + " cut" )
         event.Cuts[self.name] = False
@@ -294,11 +350,11 @@ class LeptonDefinitionCut(Cut) :
         if data_type == "GEN" :
             ExtractObjectsFromGenRecord(event)
             for mu in event.GenMuon :
-                if abs(mu.Eta) < 2.4 and mu.PT > 7. :
+                if abs(mu.Eta) < 2.6 and mu.PT > .7 :
                     goodMuons.append(mu)
 
             for el in event.GenElectron :
-                if abs(el.Eta) < 2.5 and el.PT > 7. :
+                if abs(el.Eta) < 8.5 and el.PT > .7 :
                     goodElectrons.append(el)
 
         if data_type == "SIM" :
@@ -326,21 +382,6 @@ class LeptonDefinitionCut(Cut) :
 
             event.goodLeptons = goodLeptons
 
-            fourLepton = TLorentzVector(0,0,0,0)
-            for lepton in goodLeptons :
-                fourLepton += lepton.P4()
-            Mass = fourLepton.M()
-
-            self.LeadingLeptonEta.Fill(goodLeptons[0].Eta)
-            self.SubleadingLeptonEta.Fill(goodLeptons[1].Eta)
-            self.ThirdleadingLeptonEta.Fill(goodLeptons[2].Eta)
-            self.FourthleadingLeptonEta.Fill(goodLeptons[3].Eta)
-
-            self.LeadingLeptonPT.Fill(goodLeptons[0].PT)
-            self.SubleadingLeptonPT.Fill(goodLeptons[1].PT)
-            self.ThirdleadingLeptonPT.Fill(goodLeptons[2].PT)
-            self.FourthleadingLeptonPT.Fill(goodLeptons[3].PT)
-            self.FourLeptonMass.Fill(Mass)
             return True
         else:
                # for mu in event.data.Muon :
@@ -370,7 +411,7 @@ class ZPairDefinitionCut(Cut) :
             (len(neg_electrons) >= 2 and len(pos_electrons) >= 2) or
             (len(neg_muons) >= 1 and len(pos_muons) >= 1 and
              len(neg_electrons) >= 1 and len(pos_electrons) >=1 )):
-            Z_candidates = ZCandidates(neg_muons, pos_muons,neg_electrons, pos_electrons, 1., 1000.)
+            Z_candidates = ZCandidates(neg_muons, pos_muons,neg_electrons, pos_electrons, 12., 124.)
             #print Z_candidates
 #print "length: ", len(Z_candidates)
             if len(Z_candidates) == 2 :
