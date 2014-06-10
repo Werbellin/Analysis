@@ -206,8 +206,9 @@ class AllLeptonPtEtaPlot(AddPlot) :
     def PerformStep(self, event, Histos, data_type) :
 
         fourLepton = TLorentzVector(0,0,0,0)
+        leptons = []
         if data_type == "SIM" :
-            leptons = []
+
             for mu in event.data.Muon :
                 leptons.append(mu)
             for el in event.data.Electron :

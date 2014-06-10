@@ -39,7 +39,8 @@ if len(sys.argv) > 1:
 logger = logging.getLogger('log')
 
 logging.debug("Opening XML datafile")
-tree = ET.parse('data.xml')
+#tree = ET.parse('SeperateFinalStates.xml')
+tree = ET.parse('test.xml')
 root = tree.getroot()
 
 class Data :
@@ -84,6 +85,7 @@ for dataset in root.findall('dataset') :
 print "Finished reading data.xml"
 
 newStepList =[  Start("Total events processed"),
+                #LeptonAcceptanceAnalysisCut("Delphes")]
                 AllLeptonPtEtaPlot("Lepton plots"),
                 JetMultiplicityPlot("JetMul"),
                 LeptonDefinitionCut("Lepton Acceptance Eta PT"),

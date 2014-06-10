@@ -160,10 +160,12 @@ class DefineTaggingJetsCut(Cut) :
 
         if data_type == "SIM" :
             for jet in event.data.Jet :
-                goodJets.append(jet)
+                if jet.PT > 30. and abs(jet.Eta) < 5.2 :
+                    goodJets.append(jet)
         if data_type == "GEN" :
             for jet in event.GenJet :
-                goodJets.append(jet)
+                 if jet.PT > 30. and abs(jet.Eta) < 5.2 :
+                    goodJets.append(jet)
         goodJets.sort(key=lambda x: x.PT, reverse=True)
 
         if len(goodJets) >= 2 :
@@ -253,38 +255,47 @@ class TaggingJetInvariantMassCut(Cut) :
 
         return True
 
-class LeptonAcceptanceAnalysis(Cut) :
+class LeptonAcceptanceAnalysisCut(Cut) :
     def __init__(self, step_name) :
-        super(TaggingJetInvariantMassCut, self).__init__(step_name)
-        self.CutAbbreviation = "TJM"
+        super(LeptonAcceptanceAnalysisCut, self).__init__(step_name)
+        self.CutAbbreviation = "LAccAna"
 
     def Initialize(self, Histos, data_name, cut_flow) :
-        super(TaggingJetInvariantMassCut, self).Initialize(Histos, data_name, cut_flow)
+        super(LeptonAcceptanceAnalysisCut, self).Initialize(Histos, data_name, cut_flow)
 
         eta_bin = 5
         eta_max  = 2.5
         eta_min  = -2.5
 
-        PT_bin = 10
-        PT_max  = 300.
+        PT_bin = 20
+        PT_max  = 200.
         PT_min  = 0.
+
+        PT_ETA_bin = 10
+        PT_ETA_max = 200
 
         self.ElectronEta = TH1D(self.DataName + self.Cutflow + "El_Eta","Number of electrons", eta_bin, eta_min, eta_max)
         self.MuonEta = TH1D(self.DataName + self.Cutflow + "Muon_Eta","Number of muons",eta_bin, eta_min, eta_max)
-        self.ElectronPtEta = TH2D(self.DataName + self.Cutflow + "El_Pt_Eta", "Electron efficency", PT_bin, PT_min, PT_max, eta_bin, eta_min, eta_max)
+        self.ElectronPtEta = TH2D(self.DataName + self.Cutflow + "El_Pt_Eta", "Electron efficency", PT_ETA_bin, PT_min, PT_ETA_max, eta_bin, eta_min, eta_max)
         Histos.append(self.ElectronPtEta)
-        self.MuonPtEta = TH2D(self.DataName + self.Cutflow + "Muon_Pt_Eta", "Muon efficency", PT_bin, PT_min, PT_max, eta_bin, eta_min, eta_max)
+        self.MuonPtEta = TH2D(self.DataName + self.Cutflow + "Muon_Pt_Eta", "Muon efficency", PT_ETA_bin, PT_min, PT_ETA_max, eta_bin, eta_min, eta_max)
         
         Histos.append(self.MuonPtEta)
         Histos.append(self.ElectronEta)
         Histos.append(self.MuonEta)
 
         self.ElectronPT = TH1D(self.DataName + self.Cutflow + "El_PT","PT of leading lepton", PT_bin, PT_min, PT_max)
-        self.MuonPT = TH1D(self.DataName +self.Cutflow +"Muono_PT","PT of subleading lepton",PT_bin, PT_min, PT_max)
+        self.MuonPT = TH1D(self.DataName +self.Cutflow +"Muon_PT","PT of subleading lepton",PT_bin, PT_min, PT_max)
 
         Histos.append(self.ElectronPT)
         Histos.append(self.MuonPT)
 
+        R_bin = 100
+        R_min = 0.
+        R_max = 7.
+        self.LeptonR = TH1D(self.DataName + self.Cutflow + "-RLiLj","Mass of tagging jets",R_bin, R_min, R_max)
+        Histos.append(self.LeptonR)
+ 
     def IsCut(self) :
         return True
 
@@ -297,11 +308,11 @@ class LeptonAcceptanceAnalysis(Cut) :
         if data_type == "GEN" :
             ExtractObjectsFromGenRecord(event)
             for mu in event.GenMuon :
-                if abs(mu.Eta) < 6.6 and mu.PT > .1 :
+                if abs(mu.Eta) < 2.4 and mu.PT > 7. :
                     goodMuons.append(mu)
 
             for el in event.GenElectron :
-                if abs(el.Eta) < 6.6 and el.PT > .1 :
+                if abs(el.Eta) < 2.5 and el.PT > 7. :
                     goodElectrons.append(el)
 
         if data_type == "SIM" :
@@ -329,6 +340,14 @@ class LeptonAcceptanceAnalysis(Cut) :
             self.ElectronPtEta.Fill(el.PT, el.Eta)
             self.ElectronEta.Fill(el.Eta)
             self.ElectronPT.Fill(el.PT)
+
+        for l1 in goodLeptons :
+            for l2 in goodLeptons :
+                if dR(l1.P4(),l2.P4()) <> 0. :
+                    self.LeptonR.Fill(dR(l1.P4(), l2.P4()))
+ 
+
+
         return True
 
 
@@ -350,11 +369,11 @@ class LeptonDefinitionCut(Cut) :
         if data_type == "GEN" :
             ExtractObjectsFromGenRecord(event)
             for mu in event.GenMuon :
-                if abs(mu.Eta) < 2.6 and mu.PT > .7 :
+                if abs(mu.Eta) < 2.5 and mu.PT > .7 :
                     goodMuons.append(mu)
 
             for el in event.GenElectron :
-                if abs(el.Eta) < 8.5 and el.PT > .7 :
+                if abs(el.Eta) < 2.5 and el.PT > .7 :
                     goodElectrons.append(el)
 
         if data_type == "SIM" :

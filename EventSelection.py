@@ -168,9 +168,9 @@ class EventSelection :
         for data in self.dataset :
             for hist in self.Histos[data.name] :
                 hist.SetTitle(data.name)
-                if data.name.find("QCD")<> -1 :
+                if data.name.find("GEN")<> -1 :
                     hist.SetLineColor(2)
-                if data.name.find("EWK")<> -1 :
+                if data.name.find("SIM")<> -1 :
                     hist.SetLineColor(3)
                 if data.name.find("VBF")<> -1 :
                     hist.SetLineColor(6)
@@ -178,8 +178,8 @@ class EventSelection :
                 #print "Trying to retrieve",hist.GetName()[len(data.name):]
                 #print "Content of stackdir: ", stackdir
                 stack = stackdir[hist.GetName()[len(data.name):]]
-                if hist.Integral() <> 0. :
-                    hist.Scale(1.0/hist.Integral(), "width")
+                #if hist.Integral() <> 0. :
+                #    hist.Scale(1.0/hist.Integral(), "width")
                 stack.Add(hist)
 
 
