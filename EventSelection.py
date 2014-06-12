@@ -133,7 +133,7 @@ class EventSelection :
         print str_double
         for data in self.dataset :
             print "Cutflow for the ", data.name, " dataset:"
-            template = "{0:40}|{1:15}|{2:15}|{3:15}|{4:15}" # column widths: 8, 10, 15, 7, 10
+            template = "{0:60}|{1:15}|{2:15}|{3:15}|{4:15}" # column widths: 8, 10, 15, 7, 10
             print str_single
             print template.format("Cut name", "Passed","@"+ "{:3.1f}".format(self.luminosity) + "fb-1", "abs.diff", "rel. diff") # header
             print str_single
@@ -147,7 +147,7 @@ class EventSelection :
 
                 evtNumberMCFile = item.NumberEventsPassedCut
                 evtNumberActual = item.NumberEventsPassedCut / data.totalNumberEvents * data.xsection * self.luminosity
-                tuple = (item.name, evtNumberMCFile, "{:10.3f}".format(evtNumberActual) , "{:10.2f}".format(diff) , "{:10.1f}".format(rel_diff))
+                tuple = (item.__str__(), evtNumberMCFile, "{:10.3f}".format(evtNumberActual) , "{:10.2f}".format(diff) , "{:10.1f}".format(rel_diff))
                 print template.format(*tuple)
             print str_single
     def Finalize(self) :

@@ -40,7 +40,9 @@ logger = logging.getLogger('log')
 
 logging.debug("Opening XML datafile")
 #tree = ET.parse('SeperateFinalStates.xml')
-tree = ET.parse('test.xml')
+#tree = ET.parse('test.xml')
+#tree = ET.parse('LHE.xml')
+tree = ET.parse('data.xml')
 root = tree.getroot()
 
 class Data :
@@ -88,9 +90,12 @@ newStepList =[  Start("Total events processed"),
                 #LeptonAcceptanceAnalysisCut("Delphes")]
                 AllLeptonPtEtaPlot("Lepton plots"),
                 JetMultiplicityPlot("JetMul"),
-                LeptonDefinitionCut("Lepton Acceptance Eta PT"),
+                LeptonDefinitionCut("Lepton Acceptance"),
+                ZPairMassPlot("ZMass"),
+                #TrueZCut("trueZ"),
                 GoodLeptonPtEtaPlot("GoodLeptons"),
                 ZPairDefinitionCut("Two Z candidates"),
+                ZPairMassPlot("ZMass"),
                 GoodLeptonPtEtaPlot("Z leptons"),
                 LeptonIsolationPlot("R of Z Leptons"),
                 DefineTaggingJetsCut("DefineTaggingJets"),
@@ -100,11 +105,12 @@ newStepList =[  Start("Total events processed"),
                 ZJetsKinematics("Kinematics of TJ1 and L1/2"),
                 ZeppenfeldVariablesPlot("YStar1"),
                 TaggingJetRapidityGapCut("Tagging jet rapidity gap > 1.8"),
-                JetVetoCut("Jet veto"),
+                #JetVetoCut("Jet veto"),
                 TaggingJetInvariantMassCut("Invariant mass of tagging jets"),
                 TaggingJetKinematicsPlot("TJ kinematics"),
                 LeptonsBetweenTaggingJetsEtaCut("Leptons between tagging jets"),
                 TaggingJetY1Y2Cut("Cut on y1y2"),
+                JetVetoCut("Jet veto"),
                 LeptonIsolationPlot("R of Z Leptons"),
                 GoodLeptonPtEtaPlot("Leptons between jets")]
 

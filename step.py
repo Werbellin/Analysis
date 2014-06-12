@@ -1,5 +1,5 @@
 from functions import *
-from ROOT import TH1D
+from ROOT import TH1D, TH2D
 class Step(object) :
     def __init__(self, step_name) :
         self.name = step_name
@@ -23,6 +23,31 @@ class AddPlot(Step) :
             self.histos[local_name] = TH1D(self.DataName + self.Cutflow + "-" + ROOT_name,
                                            title, x_bin, x_min, x_max)
             self._external_histos.append(self.histos[local_name])
+
+class ZPairMassPlot(AddPlot) :
+    def __init__(self, step_name) :
+        super(ZPairMassPlot, self).__init__(step_name)
+
+    def Initialize(self, Histos, data_name, cut_flow) :
+        super(ZPairMassPlot,self).Initialize(Histos, data_name, cut_flow)
+        Jmul_bin  = 40
+        Jmul_max  = 400.
+        Jmul_min  = 0.
+        self.ZPairMass = TH2D(self.DataName +self.Cutflow+ "-ZPairMass","Z pair mass distribution", Jmul_bin, Jmul_min, Jmul_max, Jmul_bin, Jmul_min, Jmul_max)
+        self.ZPairMass.SetTitle("Z pair mass distribution;m_{Z_{1}};m_{Z_{2}}")
+        Histos.append(self.ZPairMass)
+
+    def PerformStep(self, event, Histos, data_type) :
+        Z1Mass = 0.
+        Z2Mass = 0.
+
+        if data_type == "GEN" :
+            if len(event.goodMuons) >= 2 and len(event.goodElectrons) >=2 :
+                Z1Mass = (event.goodMuons[0].P4() + event.goodMuons[1].P4()).M()
+                Z2Mass = (event.goodElectrons[0].P4() + event.goodElectrons[1].P4()).M()
+        
+        self.ZPairMass.Fill(Z1Mass, Z2Mass)
+        return True
 
 
 class JetMultiplicityPlot(AddPlot) :
@@ -249,7 +274,7 @@ class GoodLeptonPtEtaPlot(AddPlot) :
         self.LeadingGoodLeptonEta = TH1D(self.DataName +self.Cutflow+ "LeadingGoodLeptonEta","Eta of leading lepton", eta_bin, eta_min, eta_max)
         self.SubleadingGoodLeptonEta = TH1D(self.DataName +self.Cutflow+ "SubleadingGoodLeptonEta","Eta of subleading lepton",eta_bin, eta_min, eta_max)
         self.ThirdleadingGoodLeptonEta = TH1D(self.DataName +self.Cutflow+ "ThirdleadingGoodLeptonEta","Eta of third lepton",eta_bin, eta_min, eta_max)
-        self.FourthleadingGoodLeptonEta = TH1D(self.DataName +self.Cutflow+ "FourthleadingGoodLeptonEta","Eta of fourth lepton",eta_bin, eta_min, eta_max)
+        self.FourthleadingGoodLeptonEta = TH1D(self.DataName +self.Cutflow+ "FourthleadingGoodLeptonEta","#eta of the fourth lepton;#eta;leptons",eta_bin, eta_min, eta_max)
         Histos.append(self.LeadingGoodLeptonEta)
         Histos.append(self.SubleadingGoodLeptonEta)
         Histos.append(self.ThirdleadingGoodLeptonEta)
@@ -262,7 +287,7 @@ class GoodLeptonPtEtaPlot(AddPlot) :
         self.LeadingGoodLeptonPT = TH1D(self.DataName +self.Cutflow+ "LeadingGoodLeptonPT","PT of leading lepton", PT_bin, PT_min, PT_max)
         self.SubleadingGoodLeptonPT = TH1D(self.DataName +self.Cutflow+ "SubleadingGoodLeptonPT","PT of subleading lepton",PT_bin, PT_min, PT_max)
         self.ThirdleadingGoodLeptonPT = TH1D(self.DataName +self.Cutflow+ "ThirdleadingGoodLeptonPT","PT of third lepton",PT_bin, PT_min, PT_max)
-        self.FourthleadingGoodLeptonPT = TH1D(self.DataName +self.Cutflow+ "FourthleadingGoodLeptonPT","PT of fourth lepton",PT_bin, PT_min, PT_max)
+        self.FourthleadingGoodLeptonPT = TH1D(self.DataName +self.Cutflow+ "FourthleadingGoodLeptonPT","p_{T} of the fourth lepton;p_{T};leptons",75, PT_min, 150.)
 
         Histos.append(self.LeadingGoodLeptonPT)
         Histos.append(self.SubleadingGoodLeptonPT)

@@ -1,3 +1,6 @@
+#!/usr/local/bin/python$
+# -*- coding: utf-8 -*-$
+
 import logging
 from functions import *
 from ROOT import TH2D
@@ -232,7 +235,26 @@ class TaggingJetSumEtaCut(Cut) :
 
         return True
 
+class TrueZCut(Cut) :
+    def __init__(self, step_name) :
+        super(TrueZCut, self).__init__(step_name)
+        self.CutAbbreviation = "TrueZ"
 
+    def Initialize(self, Histos, data_name, cut_flow) :
+        super(TrueZCut, self).Initialize(Histos, data_name, cut_flow)
+
+    def PerformStep(self, event, Histos, data_type) :
+        logging.debug("Called ApplyCut of " + self.name + " cut" )
+        if data_type == "GEN" :
+            if len(event.goodMuons) >= 2 and len(event.goodElectrons) >=2 :
+                Z1Mass = (event.goodMuons[0].P4() + event.goodMuons[1].P4()).M()
+                Z2Mass = (event.goodElectrons[0].P4() + event.goodElectrons[1].P4()).M()
+                l = 66.
+                u = 116.
+                if Z1Mass >= l and Z1Mass <= u and Z2Mass >= l and Z2Mass <= u:
+                    self.NumberEventsPassedCut += 1.
+                    return True
+        return False
 
 class TaggingJetInvariantMassCut(Cut) :
     def __init__(self, step_name) :
@@ -290,14 +312,14 @@ class LeptonAcceptanceAnalysisCut(Cut) :
         Histos.append(self.ElectronPT)
         Histos.append(self.MuonPT)
 
+        self.LeptonMinPT = TH1D(self.DataName + self.Cutflow + "Lepton_Min_PT","PT of 4th lepton", 30, PT_min, 30.)
+        Histos.append(self.LeptonMinPT)
+
         R_bin = 100
         R_min = 0.
         R_max = 7.
         self.LeptonR = TH1D(self.DataName + self.Cutflow + "-RLiLj","Mass of tagging jets",R_bin, R_min, R_max)
         Histos.append(self.LeptonR)
- 
-    def IsCut(self) :
-        return True
 
     def PerformStep(self, event, Histos, data_type) :
         logging.debug("Called ApplyCut of " + self.name + " cut" )
@@ -308,20 +330,20 @@ class LeptonAcceptanceAnalysisCut(Cut) :
         if data_type == "GEN" :
             ExtractObjectsFromGenRecord(event)
             for mu in event.GenMuon :
-                if abs(mu.Eta) < 2.4 and mu.PT > 7. :
+                if abs(mu.Eta) < 2.4 and mu.PT > 10. :
                     goodMuons.append(mu)
 
             for el in event.GenElectron :
-                if abs(el.Eta) < 2.5 and el.PT > 7. :
+                if abs(el.Eta) < 2.5 and el.PT > 4. :
                     goodElectrons.append(el)
 
         if data_type == "SIM" :
             for mu in event.data.Muon :
-                if abs(mu.Eta) < 2.4 and mu.PT > 7. :
+                if abs(mu.Eta) < 2.4 and mu.PT > 10. :
                     goodMuons.append(mu)
 
             for el in event.data.Electron :
-                if abs(el.Eta) < 2.5 and el.PT > 7. :
+                if abs(el.Eta) < 2.5 and el.PT > 4. :
                     goodElectrons.append(el)
 
         goodLeptons = []
@@ -345,17 +367,27 @@ class LeptonAcceptanceAnalysisCut(Cut) :
             for l2 in goodLeptons :
                 if dR(l1.P4(),l2.P4()) <> 0. :
                     self.LeptonR.Fill(dR(l1.P4(), l2.P4()))
- 
 
-
+        if len(goodLeptons) >= 4 :
+            self.NumberEventsPassedCut += 1
+            self.LeptonMinPT.Fill(goodLeptons[3].PT)
         return True
 
 
 
 class LeptonDefinitionCut(Cut) :
-    def __init__(self, step_name) :
+    def __init__(self, step_name, el_pt = 7., el_eta = 2.5, mu_pt = 7., mu_eta = 2.4) :
         super(LeptonDefinitionCut, self).__init__(step_name)
         self.CutAbbreviation = "LDEF"
+        self.ElPtCut    = el_pt
+        self.ElEtaCut   = el_eta
+        self.MuPtCut    = mu_pt
+        self.MuEtaCut   = mu_eta
+
+    def __str__(self) :
+        name = self.name + "[pTe>" + str(self.ElPtCut) + ", |ηe|<" + str(self.ElEtaCut) \
+                        + ", pTμ>" + str(self.MuPtCut) + ", |ημ|<" + str(self.MuEtaCut) + "]"
+        return name
 
     def Initialize(self, Histos, data_name, cut_flow) :
         super(LeptonDefinitionCut, self).Initialize(Histos, data_name, cut_flow)
@@ -369,11 +401,11 @@ class LeptonDefinitionCut(Cut) :
         if data_type == "GEN" :
             ExtractObjectsFromGenRecord(event)
             for mu in event.GenMuon :
-                if abs(mu.Eta) < 2.5 and mu.PT > .7 :
+                if abs(mu.Eta) < 2.4 and mu.PT > 7. :
                     goodMuons.append(mu)
 
             for el in event.GenElectron :
-                if abs(el.Eta) < 2.5 and el.PT > .7 :
+                if abs(el.Eta) < 2.5 and el.PT > 7. :
                     goodElectrons.append(el)
 
         if data_type == "SIM" :
@@ -430,7 +462,7 @@ class ZPairDefinitionCut(Cut) :
             (len(neg_electrons) >= 2 and len(pos_electrons) >= 2) or
             (len(neg_muons) >= 1 and len(pos_muons) >= 1 and
              len(neg_electrons) >= 1 and len(pos_electrons) >=1 )):
-            Z_candidates = ZCandidates(neg_muons, pos_muons,neg_electrons, pos_electrons, 12., 124.)
+            Z_candidates = ZCandidatesMuEl(neg_muons, pos_muons,neg_electrons, pos_electrons, 80., 100.)
             #print Z_candidates
 #print "length: ", len(Z_candidates)
             if len(Z_candidates) == 2 :

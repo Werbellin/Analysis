@@ -153,6 +153,25 @@ def GetScalarPTMatrix(neg_par, pos_par, lower, upper):
                 result[n][p] = abs(neg_par[n].PT) + abs(pos_par[p].PT)
     return result
 
+def ZCandidatesMuEl(pos_par_type1, neg_par_type1, pos_par_type2, neg_par_type2, lower, upper):
+    logging.debug('Enterered ZCandidatesMuEl')
+    #print "Mass par type 1: ", M(neg_par_type1[0], pos_par_type1[0])
+    #print "Mass par type 2: ", M(neg_par_type2[0], pos_par_type2[0])
+
+    if len(pos_par_type1) >= 1 and len(neg_par_type1) >= 1 and len(pos_par_type2) >=1 and len(neg_par_type2) >= 1 :
+        Z1Mass = (neg_par_type1[0].P4() + pos_par_type1[0].P4()).M()
+        Z2Mass = (neg_par_type2[0].P4() + pos_par_type2[0].P4()).M()
+        if Z1Mass <= upper and Z1Mass >= lower and Z2Mass <= upper and Z2Mass >= lower :
+            Z1 = (neg_par_type1[0], pos_par_type1[0])
+            Z2 = (neg_par_type2[0], pos_par_type2[0])
+
+            return (Z1, Z2)
+        else :
+            return ()
+    else :
+        return ()
+
+
 def ZCandidates(pos_par_type1, neg_par_type1, pos_par_type2, neg_par_type2, lower, upper):
     logging.debug('Enterered ZCandidates')
     #print "Mass par type 1: ", M(neg_par_type1[0], pos_par_type1[0])
