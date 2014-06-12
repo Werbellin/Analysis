@@ -18,6 +18,11 @@ class Start(Cut) :
     def __init__(self, step_name) :
         super(Start, self).__init__(step_name)
         self.CutAbbreviation = ""
+
+    def __str__(self) :
+        name = self.name
+        return name
+
     def Initialize(self, Histos, data_name, cut_flow) :
         super(Start,self).Initialize(Histos, data_name, cut_flow)
 
@@ -44,9 +49,15 @@ class ZeppenfeldVariableCut(Cut) :
             return False
 
 class JetVetoCut(Cut) :
-    def __init__(self, step_name) :
+    def __init__(self, step_name, pt_cut = 25.) :
         super(JetVetoCut, self).__init__(step_name)
         self.CutAbbreviation = "JVeto"
+        self.JetPtCut        = pt_cut
+
+    def __str__(self) :
+        name = self.name + " [pTj > " + str(self.JetPtCut) + "]"
+        return name
+
     def Initialize(self, Histos, data_name, cut_flow) :
         super(JetVetoCut,self).Initialize(Histos, data_name, cut_flow)
 
@@ -79,16 +90,22 @@ class JetVetoCut(Cut) :
 
 
 class TaggingJetY1Y2Cut(Cut) :
-    def __init__(self, step_name) :
+    def __init__(self, step_name, Y1Y2_cut = 0.0) :
         super(TaggingJetY1Y2Cut, self).__init__(step_name)
-        self.CutAbbreviation = "TJY1Y2"
+        self.CutAbbreviation    = "TJY1Y2"
+        self.Y1Y2Cut            = Y1Y2_cut
+
+    def __str__(self) :
+        name = self.name + " [y1*y2 < " + str(self.Y1Y2Cut) + "]"
+        return name
+
     def Initialize(self, Histos, data_name, cut_flow) :
         super(TaggingJetY1Y2Cut,self).Initialize(Histos, data_name, cut_flow)
 
     def PerformStep(self, event, Histos, data_type) :
         logging.debug("Called ApplyCut of " + self.name + " cut" )
 
-        if event.TaggingJetY1Y2 <= 0. :
+        if event.TaggingJetY1Y2 <= self.Y1Y2Cut :
             self.NumberEventsPassedCut += 1.0
             return True
         else :
@@ -99,6 +116,10 @@ class LeptonsBetweenTaggingJetsEtaCut(Cut) :
     def __init__(self, step_name) :
         super(LeptonsBetweenTaggingJetsEtaCut, self).__init__(step_name)
         self.CutAbbreviation = "LbTJEta"
+
+    def __str__(self) :
+        name = self.name
+        return name
 
     def Initialize(self, Histos, data_name, cut_flow) :
         super(LeptonsBetweenTaggingJetsEtaCut, self).Initialize(Histos, data_name, cut_flow)
@@ -127,9 +148,15 @@ class LeptonsBetweenTaggingJetsEtaCut(Cut) :
 
 
 class LeptonIsolationCut(Cut) :
-    def __init__(self, step_name) :
+    def __init__(self, step_name, lepton_R = 0.3) :
         super(LeptonIsolationCut, self).__init__(step_name)
         self.CutAbbreviation = "LISO"
+        self.LeptonRCut
+
+    def __str__(self) :
+        name = self.name + " [ΔR > " + str(self.LeptonRCut) + "]"
+        return name
+
 
     def Initialize(self, Histos, data_name, cut_flow) :
         super(LeptonIsolationCut, self).Initialize(Histos, data_name, cut_flow)
@@ -138,7 +165,7 @@ class LeptonIsolationCut(Cut) :
         logging.debug("Called ApplyCut of " + self.name + " cut" )
         for lepton1 in event.goodLeptons :
             for lepton2 in event.goodLeptons :
-                if lepton1 <> lepton2 and dR(lepton1, lepton2) <= 0.3 :
+                if lepton1 <> lepton2 and dR(lepton1, lepton2) <= self.LeptonRCut :
                     event.Cuts[self.name] = False
                     return False
 
@@ -148,9 +175,16 @@ class LeptonIsolationCut(Cut) :
 
 
 class DefineTaggingJetsCut(Cut) :
-    def __init__(self, step_name) :
+    def __init__(self, step_name, jet_pt = 30., jet_eta = 5.2) :
         super(DefineTaggingJetsCut, self).__init__(step_name)
         self.CutAbbreviation = "TJDEF"
+        self.JetPtCut  = jet_pt
+        self.JetEtaCut = jet_eta
+
+    def __str__(self) :
+        name = self.name + " [pTj > " + str(self.JetPtCut) + ", |ηj| < " + str(self.JetEtaCut) + "]"
+        return name
+
 
     def Initialize(self, Histos, data_name, cut_flow) :
         super(DefineTaggingJetsCut, self).Initialize(Histos, data_name, cut_flow)
@@ -163,11 +197,11 @@ class DefineTaggingJetsCut(Cut) :
 
         if data_type == "SIM" :
             for jet in event.data.Jet :
-                if jet.PT > 30. and abs(jet.Eta) < 5.2 :
+                if jet.PT > self.JetPtCut and abs(jet.Eta) < self.JetEtaCut :
                     goodJets.append(jet)
         if data_type == "GEN" :
             for jet in event.GenJet :
-                 if jet.PT > 30. and abs(jet.Eta) < 5.2 :
+                 if jet.PT > self.JetPtCut and abs(jet.Eta) < self.JetEtaCut :
                     goodJets.append(jet)
         goodJets.sort(key=lambda x: x.PT, reverse=True)
 
@@ -195,16 +229,22 @@ class DefineTaggingJetsCut(Cut) :
         return False
 
 class TaggingJetRapidityGapCut(Cut) :
-    def __init__(self, step_name) :
+    def __init__(self, step_name, rap_gap = 3.0) :
         super(TaggingJetRapidityGapCut, self).__init__(step_name)
         self.CutAbbreviation = "TJDY"
+        self.RapidityGapCut = rap_gap
+
+    def __str__(self) :
+        name = self.name + " [Δy > " + str(self.RapidityGapCut) + "]"
+        return name
+
 
     def Initialize(self, Histos, data_name, cut_flow) :
         super(TaggingJetRapidityGapCut, self).Initialize(Histos, data_name, cut_flow)
 
     def PerformStep(self, event, Histos, data_type) :
         logging.debug("Called ApplyCut of " + self.name + " cut" )
-        if event.TaggingJetRapidityGap > 3.0 :
+        if event.TaggingJetRapidityGap > self.RapidityGapCut :
             event.Cuts[self.name] = True
             self.NumberEventsPassedCut += 1.
             return True
@@ -240,6 +280,12 @@ class TrueZCut(Cut) :
         super(TrueZCut, self).__init__(step_name)
         self.CutAbbreviation = "TrueZ"
 
+    def __str__(self) :
+        name = self.name + " [pTe>" + str(self.ElPtCut) + ", |ηe|<" + str(self.ElEtaCut) \
+                        + ", pTμ>" + str(self.MuPtCut) + ", |ημ|<" + str(self.MuEtaCut) + "]"
+        return name
+
+
     def Initialize(self, Histos, data_name, cut_flow) :
         super(TrueZCut, self).Initialize(Histos, data_name, cut_flow)
 
@@ -257,9 +303,15 @@ class TrueZCut(Cut) :
         return False
 
 class TaggingJetInvariantMassCut(Cut) :
-    def __init__(self, step_name) :
+    def __init__(self, step_name, mass_cut = 380.) :
         super(TaggingJetInvariantMassCut, self).__init__(step_name)
-        self.CutAbbreviation = "TJM"
+        self.CutAbbreviation     = "TJM"
+        self.JetInvariantMassCut = mass_cut
+
+    def __str__(self) :
+        name = self.name + " [mjj > " + str(self.JetInvariantMassCut) + "]"
+        return name
+
 
     def Initialize(self, Histos, data_name, cut_flow) :
         super(TaggingJetInvariantMassCut, self).Initialize(Histos, data_name, cut_flow)
@@ -267,7 +319,7 @@ class TaggingJetInvariantMassCut(Cut) :
     def PerformStep(self, event, Histos, data_type) :
         logging.debug("Called ApplyCut of " + self.name + " cut" )
         mass = (event.TaggingJet1 + event.TaggingJet2).M()
-        if mass > 380. :
+        if mass > self.JetInvariantMassCut :
             event.Cuts[self.name] = True
             self.NumberEventsPassedCut += 1.
             return True
@@ -278,9 +330,19 @@ class TaggingJetInvariantMassCut(Cut) :
         return True
 
 class LeptonAcceptanceAnalysisCut(Cut) :
-    def __init__(self, step_name) :
+    def __init__(self, step_name, el_pt = 7., el_eta = 2.5, mu_pt = 7., mu_eta = 2.4) :
         super(LeptonAcceptanceAnalysisCut, self).__init__(step_name)
         self.CutAbbreviation = "LAccAna"
+        self.ElPtCut    = el_pt
+        self.ElEtaCut   = el_eta
+        self.MuPtCut    = mu_pt
+        self.MuEtaCut   = mu_eta
+
+    def __str__(self) :
+        name = self.name + " [pTe>" + str(self.ElPtCut) + ", |ηe|<" + str(self.ElEtaCut) \
+                        + ", pTμ>" + str(self.MuPtCut) + ", |ημ|<" + str(self.MuEtaCut) + "]"
+        return name
+
 
     def Initialize(self, Histos, data_name, cut_flow) :
         super(LeptonAcceptanceAnalysisCut, self).Initialize(Histos, data_name, cut_flow)
@@ -385,7 +447,7 @@ class LeptonDefinitionCut(Cut) :
         self.MuEtaCut   = mu_eta
 
     def __str__(self) :
-        name = self.name + "[pTe>" + str(self.ElPtCut) + ", |ηe|<" + str(self.ElEtaCut) \
+        name = self.name + " [pTe>" + str(self.ElPtCut) + ", |ηe|<" + str(self.ElEtaCut) \
                         + ", pTμ>" + str(self.MuPtCut) + ", |ημ|<" + str(self.MuEtaCut) + "]"
         return name
 
@@ -442,9 +504,16 @@ class LeptonDefinitionCut(Cut) :
             return False
 
 class ZPairDefinitionCut(Cut) :
-    def __init__(self, step_name) :
+    def __init__(self, step_name, lower_mass = 66., upper_mass = 116.) :
         super(ZPairDefinitionCut, self).__init__(step_name)
         self.CutAbbreviation = "2ZDEF"
+        self.ZLowerMassCut = lower_mass
+        self.ZUpperMassCut = upper_mass
+
+    def __str__(self) :
+        name = self.name + " [" + str(self.ZLowerMassCut) + " < mZ <" + str(self.ZUpperMassCut) + "]"
+        return name
+
 
     def Initialize(self, Histos, data_name, cut_flow) :
         super(ZPairDefinitionCut, self).Initialize(Histos, data_name, cut_flow)
@@ -462,7 +531,7 @@ class ZPairDefinitionCut(Cut) :
             (len(neg_electrons) >= 2 and len(pos_electrons) >= 2) or
             (len(neg_muons) >= 1 and len(pos_muons) >= 1 and
              len(neg_electrons) >= 1 and len(pos_electrons) >=1 )):
-            Z_candidates = ZCandidatesMuEl(neg_muons, pos_muons,neg_electrons, pos_electrons, 80., 100.)
+            Z_candidates = ZCandidatesMuEl(neg_muons, pos_muons,neg_electrons, pos_electrons, self.ZLowerMassCut, self.ZUpperMassCut)
             #print Z_candidates
 #print "length: ", len(Z_candidates)
             if len(Z_candidates) == 2 :
