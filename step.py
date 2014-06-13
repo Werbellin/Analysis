@@ -49,6 +49,19 @@ class ZPairMassPlot(AddPlot) :
         self.ZPairMass.Fill(Z1Mass, Z2Mass)
         return True
 
+class Z1LeptonPtPlot(AddPlot) :
+    def __init__(self, step_name) :
+        super(Z1LeptonPtPlot, self).__init__(step_name)
+
+    def Initialize(self, Histos, data_name, cut_flow) :
+        super(Z1LeptonPtPlot,self).Initialize(Histos, data_name, cut_flow)
+        self.AddHistogram("Z1LeptonPt", "-Z1LeptonPt", "p_{T} of Z_{1};p_{T}", 0., 140., 40)
+
+    def PerformStep(self, event, Histos, data_type) :
+        Z1Mass = 0.
+        self.histos["Z1LeptonPt"].Fill(event.Z1Particles[0].Pt())
+        self.histos["Z1LeptonPt"].Fill(event.Z1Particles[1].Pt())
+        return True
 
 class JetMultiplicityPlot(AddPlot) :
     def __init__(self, step_name) :
@@ -133,7 +146,7 @@ class TaggingJetKinematicsPlot(AddPlot) :
         ES_bin = 100
         ES_min = -10.
         ES_max = 10.
-        self.TaggingJetEtaSum = TH1D(self.DataName + self.Cutflow + "-TJETASUM","Mass of tagging jets",ES_bin, ES_min, ES_max)
+        self.TaggingJetEtaSum = TH1D(self.DataName + self.Cutflow + "-TJETASUM","Mass of tagging jets;m_{jj}",ES_bin, ES_min, ES_max)
         Histos.append(self.TaggingJetEtaSum)
         M_bin = 100
         M_min = 0.
@@ -143,11 +156,11 @@ class TaggingJetKinematicsPlot(AddPlot) :
         DY_bin = 100
         DY_min = 0.0
         DY_max = 9.0
-        self.TaggingJetRapidityGap = TH1D(self.DataName + self.Cutflow + "-TJDY","Rapidity of tagging jets",DY_bin, DY_min, DY_max)
+        self.TaggingJetRapidityGap = TH1D(self.DataName + self.Cutflow + "-TJDY","Rapidity gap of tagging jets;#delta(j,j)",DY_bin, DY_min, DY_max)
         H_bin = 60
         H_min = -15.0
         H_max = 15.0
-        self.TaggingJetY1Y2 = TH1D(self.DataName + self.Cutflow + "-TJY1Y2"," y_1 * y_2 of  tagging jets",H_bin, H_min, H_max)
+        self.TaggingJetY1Y2 = TH1D(self.DataName + self.Cutflow + "-TJY1Y2"," y_{1} * y_{2} of  tagging jets",H_bin, H_min, H_max)
         Histos.append(self.TaggingJetY1Y2)
 
 
@@ -172,10 +185,10 @@ class TaggingJetKinematicsPlot(AddPlot) :
         Histos.append(self.TaggingJetRapidityGap)
 
         self.AddHistogram("TJEta1Eta2", "Eta1Eta2", "#eta_{j_1}#eta_{j_2}", -10., 10., 10)
-
+        self.AddHistogram("TJDEtaDY", "TJDEtDaY", "#delta#eta - #delta y;#delta#eta - #delta y",-10., 10., 20)
 
     def PerformStep(self, event, Histos, data_type) :
-        self.TaggingJetMass.Fill((event.TaggingJet1 + event.TaggingJet2).M())
+        self.TaggingJetMass.Fill((event.TaggingJet1 + event.TaggingJet2).M()) 
         self.TaggingJetDPhi.Fill(event.TaggingJetDPhi)
 
         self.TaggingJetLeadingPT.Fill(event.TaggingJet1.Pt())
@@ -185,6 +198,7 @@ class TaggingJetKinematicsPlot(AddPlot) :
 
         self.TaggingJetEtaSum.Fill(event.TaggingJetEtaSum)
         self.histos["TJEta1Eta2"].Fill(event.TaggingJet1.Eta() * event.TaggingJet2.Eta())
+        self.histos["TJDEtaDY"].Fill(abs(event.TaggingJetRapidityGap - event.TaggingJetEtaGap))
         return True
 
 class AllLeptonPtEtaPlot(AddPlot) :
@@ -259,8 +273,6 @@ class AllLeptonPtEtaPlot(AddPlot) :
         self.FourLeptonMass.Fill(Mass)
         return True
 
-
-
 class GoodLeptonPtEtaPlot(AddPlot) :
     def __init__(self, step_name) :
         super(GoodLeptonPtEtaPlot, self).__init__(step_name)
@@ -303,7 +315,6 @@ class GoodLeptonPtEtaPlot(AddPlot) :
 
 
     def PerformStep(self, event, Histos, data_type) :
-
         fourLepton = TLorentzVector(0,0,0,0)
         for lepton in event.goodLeptons[:3] :
             fourLepton += lepton.P4()

@@ -46,9 +46,10 @@ tree = ET.parse('data.xml')
 root = tree.getroot()
 
 class Data :
-    def __init__(self, name, xsection, files, data_type, category, total_events) :
+    def __init__(self, name, xsection, files, data_type, category, total_events, line_color) :
         self.name               = name
         self.xsection           = xsection
+        self.LineColor          = line_color
         self.files              = files
         self.type               = data_type
         #self.identifier         = name + "(" + data_type + ")"
@@ -61,6 +62,7 @@ for dataset in root.findall('dataset') :
     xsection = float(dataset.find('xsection').text)
     category = dataset.get('category')
     name     = dataset.get('name')
+    line_color = int(dataset.find('color').text)
     type     = dataset.get('type')
     #name     = name + "(" + type + ")"
     files    = root.findall(".//*[@name='" + name + "'][@type='" + type + "']/file")
@@ -81,21 +83,24 @@ for dataset in root.findall('dataset') :
 
     totalNumberEvents = t_chain.GetEntries()
 
-    data = Data(name, xsection, filelist, type, category, totalNumberEvents)
+    data = Data(name, xsection, filelist, type, category, totalNumberEvents, line_color)
     RunData.append(data)
 
 print "Finished reading data.xml"
 
 newStepList =[  Start("Total events processed"),
+                LeptonTriggerCut("Trigger RunI"),
+                LeptonTriggerCut("Trigger RunII", l_leading_pt = 20., l_subleading_pt = 10.),
                 #LeptonAcceptanceAnalysisCut("Delphes")]
                 AllLeptonPtEtaPlot("Lepton plots"),
                 JetMultiplicityPlot("JetMul"),
                 LeptonDefinitionCut("Lepton Acceptance"),
+                GoodLeptonPtEtaPlot("GoodLeptons"),
                 ZPairMassPlot("ZMass"),
                 #TrueZCut("trueZ"),
-                GoodLeptonPtEtaPlot("GoodLeptons"),
                 ZPairDefinitionCut("Two Z candidates"),
                 ZPairMassPlot("ZMass"),
+                Z1LeptonPtPlot("Z1 Lepton pT"),
                 GoodLeptonPtEtaPlot("Z leptons"),
                 LeptonIsolationPlot("R of Z Leptons"),
                 DefineTaggingJetsCut("DefineTaggingJets"),
@@ -104,13 +109,16 @@ newStepList =[  Start("Total events processed"),
                 ZKinematics("Kinematics of Z bosons"),
                 ZJetsKinematics("Kinematics of TJ1 and L1/2"),
                 ZeppenfeldVariablesPlot("YStar1"),
-                TaggingJetRapidityGapCut("Tagging jet rapidity gap > 1.8"),
+                TaggingJetRapidityGapCut("Tagging jet rapidity gap"),
                 #JetVetoCut("Jet veto"),
                 TaggingJetInvariantMassCut("Invariant mass of tagging jets"),
                 TaggingJetKinematicsPlot("TJ kinematics"),
+                TaggingJetInvariantMassCut("Invariant mass of tagging jets", mass_cut = 600.),
+                TaggingJetInvariantMassCut("Invariant mass of tagging jets", mass_cut = 700.),
                 LeptonsBetweenTaggingJetsEtaCut("Leptons between tagging jets"),
                 TaggingJetY1Y2Cut("Cut on y1y2"),
                 JetVetoCut("Jet veto"),
+                JetVetoCut("Jet veto", pt_cut = 20.),
                 LeptonIsolationPlot("R of Z Leptons"),
                 GoodLeptonPtEtaPlot("Leptons between jets")]
 

@@ -67,7 +67,7 @@ class EventSelection :
                 return True
 
     def GetEfficencies(self) :
-        width = 65
+        width = 80
         str_double = "=" * width
         str_single = "-" * width
         print str_double
@@ -79,8 +79,8 @@ class EventSelection :
         significance = []
         for step in self._StepList[self.currentDataset] :
             data = (step.name, 0.)
-            signal[step.name]= 0.
-            background[step.name] = 0.
+            signal[str(step)]= 0.
+            background[str(step)] = 0.
             #significance.append(data)
 
         SignalData = []
@@ -100,21 +100,21 @@ class EventSelection :
 
         for data in SignalData :
             for step in self._CutList[data.name] :
-                signal[step.name] += step.NumberEventsPassedCut / data.totalNumberEvents * data.xsection
+                signal[str(step)] += step.NumberEventsPassedCut / data.totalNumberEvents * data.xsection
 
         for data in BackgroundData :
             for step in self._CutList[data.name] :
-                background[step.name] += step.NumberEventsPassedCut / data.totalNumberEvents * data.xsection
+                background[str(step)] += step.NumberEventsPassedCut / data.totalNumberEvents * data.xsection
 
         for step in self._CutList[self.currentDataset] :
-            s = signal[step.name] * math.sqrt(self.luminosity)
-            b = math.sqrt(background[step.name])
+            s = signal[str(step)] * math.sqrt(self.luminosity)
+            b = math.sqrt(background[str(step)])
             if b <> 0. :
-                significance.append( (step.name, s / b))
+                significance.append( (str(step), s / b))
             else:
-                significance.append((step.name, -1))
+                significance.append((str(step), -1))
 
-        template = "{0:40}|{1:25}"
+        template = "{0:55}|{1:25}"
         print str_single
         print template.format("Cut name", "S/√B @ " + "{:3.2f}".format(self.luminosity) + "fb⁻¹")
         print str_single
@@ -135,19 +135,20 @@ class EventSelection :
             print "Cutflow for the ", data.name, " dataset:"
             template = "{0:60}|{1:15}|{2:15}|{3:15}|{4:15}" # column widths: 8, 10, 15, 7, 10
             print str_single
-            print template.format("Cut name", "Passed","@"+ "{:3.1f}".format(self.luminosity) + "fb-1", "abs.diff", "rel. diff") # header
+            print template.format("Cut name", "Passed","@"+ "{:3.1f}".format(self.luminosity) + "fb-1", "abs.diff", "efficency") # header
             print str_single
             for previous, item, nxt in previous_and_next(self._CutList[data.name]):
-                diff = 0.
+                diff     = 0.
                 rel_diff = 0.
+                eff      = 0.
                 if previous is not None :
                     diff = - (previous.NumberEventsPassedCut - item.NumberEventsPassedCut)
                     if previous.NumberEventsPassedCut <> 0. :
                        rel_diff = diff/previous.NumberEventsPassedCut * 100.
-
+                       eff = item.NumberEventsPassedCut/previous.NumberEventsPassedCut * 100.
                 evtNumberMCFile = item.NumberEventsPassedCut
                 evtNumberActual = item.NumberEventsPassedCut / data.totalNumberEvents * data.xsection * self.luminosity
-                tuple = (item.__str__(), evtNumberMCFile, "{:10.3f}".format(evtNumberActual) , "{:10.2f}".format(diff) , "{:10.1f}".format(rel_diff))
+                tuple = (item.__str__(), evtNumberMCFile, "{:10.3f}".format(evtNumberActual) , "{:10.2f}".format(diff) , "{:10.1f}".format(eff))
                 print template.format(*tuple)
             print str_single
     def Finalize(self) :
@@ -158,6 +159,7 @@ class EventSelection :
             #print data.name, self.Histos
             for hist in self.Histos[data.name] :
                 hist.Write()
+                hist.SetLineColor(data.LineColor)
 
         data_dir = self.ROOTFile.mkdir("Combined")
         data_dir.cd()
@@ -168,12 +170,12 @@ class EventSelection :
         for data in self.dataset :
             for hist in self.Histos[data.name] :
                 hist.SetTitle(data.name)
-                if data.name.find("GEN")<> -1 :
-                    hist.SetLineColor(2)
-                if data.name.find("SIM")<> -1 :
-                    hist.SetLineColor(3)
-                if data.name.find("VBF")<> -1 :
-                    hist.SetLineColor(6)
+                #if data.name.find("GEN")<> -1 :
+                #    hist.SetLineColor(2)
+                #if data.name.find("SIM")<> -1 :
+                #    hist.SetLineColor(3)
+                #if data.name.find("VBF")<> -1 :
+                #    hist.SetLineColor(6)
                 #print "data.name: ", data.name
                 #print "Trying to retrieve",hist.GetName()[len(data.name):]
                 #print "Content of stackdir: ", stackdir
@@ -188,8 +190,7 @@ class EventSelection :
             stack.Draw("nostack")
             canvas.BuildLegend()
             #stack.Draw("nostack")
-            canvas.Print("output//" + stack.GetName() + ".pdf")
-            
+            canvas.Print("output//" + stack.GetName() + ".png")
             stack.Write()
 
 

@@ -31,7 +31,6 @@ class Start(Cut) :
         self.NumberEventsPassedCut += 1.0
         return True
 
-
 class ZeppenfeldVariableCut(Cut) :
     def __init__(self, step_name) :
         super(ZeppenfeldVariableCut, self).__init__(step_name)
@@ -77,17 +76,16 @@ class JetVetoCut(Cut) :
         else:
             eta_min = TJ_min
         #print eta_min , " max: ", eta_max
- 
+
         if data_type == "SIM" :
             for jet in event.data.Jet :
                 if jet <> event.TaggingJet1Pointer and jet <> event.TaggingJet2Pointer :
                     #print "eta: ", jet.Eta, " pt ", jet.PT
-                    if jet.PT > 25. and jet.Eta > eta_min and jet.Eta < eta_max :
+                    if jet.PT > self.JetPtCut and jet.Eta > eta_min and jet.Eta < eta_max :
                         #print "Event failed cut"
                         return False
         self.NumberEventsPassedCut += 1.0
         return True
-
 
 class TaggingJetY1Y2Cut(Cut) :
     def __init__(self, step_name, Y1Y2_cut = 0.0) :
@@ -110,7 +108,6 @@ class TaggingJetY1Y2Cut(Cut) :
             return True
         else :
             return False
-
 
 class LeptonsBetweenTaggingJetsEtaCut(Cut) :
     def __init__(self, step_name) :
@@ -146,7 +143,6 @@ class LeptonsBetweenTaggingJetsEtaCut(Cut) :
         else :
             return False
 
-
 class LeptonIsolationCut(Cut) :
     def __init__(self, step_name, lepton_R = 0.3) :
         super(LeptonIsolationCut, self).__init__(step_name)
@@ -173,7 +169,6 @@ class LeptonIsolationCut(Cut) :
         self.NumberEventsPassedCut += 1.
         return True
 
-
 class DefineTaggingJetsCut(Cut) :
     def __init__(self, step_name, jet_pt = 30., jet_eta = 5.2) :
         super(DefineTaggingJetsCut, self).__init__(step_name)
@@ -184,7 +179,6 @@ class DefineTaggingJetsCut(Cut) :
     def __str__(self) :
         name = self.name + " [pTj > " + str(self.JetPtCut) + ", |ηj| < " + str(self.JetEtaCut) + "]"
         return name
-
 
     def Initialize(self, Histos, data_name, cut_flow) :
         super(DefineTaggingJetsCut, self).Initialize(Histos, data_name, cut_flow)
@@ -218,13 +212,14 @@ class DefineTaggingJetsCut(Cut) :
 
             rapidity_product = TaggingJet1.P4().Rapidity() * TaggingJet2.P4().Rapidity()
             gap = abs(TaggingJet1.P4().Rapidity() - TaggingJet2.P4().Rapidity())
-
+            eta_gap = TaggingJet1.Eta - TaggingJet2.Eta
             DPhi = abs(TaggingJet1.Phi - TaggingJet2.Phi)
             EtaSum = TaggingJet1.Eta + TaggingJet2.Eta
             event.TaggingJetEtaSum = EtaSum
             event.TaggingJetDPhi = DPhi
             event.TaggingJetY1Y2 = rapidity_product
             event.TaggingJetRapidityGap = gap
+            event.TaggingJetEtaGap      = eta_gap
             return True
         return False
 
@@ -435,7 +430,69 @@ class LeptonAcceptanceAnalysisCut(Cut) :
             self.LeptonMinPT.Fill(goodLeptons[3].PT)
         return True
 
+class LeptonTriggerCut(Cut) :
+    def __init__(self, step_name, l_leading_pt = 17., l_subleading_pt = 8., el_1_pt = 15., el_2_pt = 8., el_3_pt = 5.) :
+        super(LeptonTriggerCut, self).__init__(step_name) 
+        self.CutAbbreviation = "LTRIG"
+        self.El1Pt  = el_1_pt
+        self.El2Pt  = el_2_pt
+        self.El3Pt  = el_3_pt
+        self.L1Pt   = l_leading_pt
+        self.L2Pt   = l_subleading_pt
 
+    def __str__(self) :
+        name = self. name + " [2l: (" + str(self.L1Pt) + ", " + str(self.L2Pt) \
+                        + "), 3e: (" + str(self.El1Pt) + ", " + str(self.El2Pt) + ", " + str(self.El3Pt) + ")]"
+        return name
+
+    def Initialize(self, Histos, data_name, cut_flow) :
+        super(LeptonTriggerCut, self).Initialize(Histos, data_name, cut_flow)
+
+    def PerformStep(self, event, Histos, data_type) :
+        logging.debug("Called ApplyCut of " + self.name + " cut" )
+        event.Cuts[self.name] = False
+        Muons       = []
+        Electrons   = []
+
+        if data_type == "GEN" :
+            ExtractObjectsFromGenRecord(event)
+            for mu in event.GenMuon :
+                if abs(mu.Eta) < 2.4 :
+                    Muons.append(mu)
+
+            for el in event.GenElectron :
+                if abs(el.Eta) < 2.5 :
+                    Electrons.append(el)
+
+        if data_type == "SIM" :
+            for mu in event.data.Muon :
+                if abs(mu.Eta) < 2.4 :
+                    Muons.append(mu)
+
+            for el in event.data.Electron :
+                if abs(el.Eta) < 2.5 :
+                    Electrons.append(el)
+
+        Leptons = []
+        Leptons.extend(Muons)
+        Leptons.extend(Electrons)
+        Leptons.sort(key=lambda x: x.PT, reverse=True)
+        Muons.sort(key=lambda x: x.PT, reverse=True)
+        Electrons.sort(key=lambda x: x.PT, reverse=True)
+
+        Trigger = {}
+        if len(Leptons) >=2 :
+            if Leptons[0].PT > self.L1Pt and Leptons[1].PT > self.L2Pt :
+                Trigger["dilepton"] = True
+        if len(Electrons) >=3 :
+            if Electrons[0].PT > self.El1Pt and Electrons[1].PT > self.El2Pt and Electrons[2].PT > self.El3Pt :
+                Trigger["trielectron"] = True
+        event.Trigger = Trigger
+        for name, result in Trigger.items() :
+            if result :
+                self.NumberEventsPassedCut += 1.0
+                return True
+        return False 
 
 class LeptonDefinitionCut(Cut) :
     def __init__(self, step_name, el_pt = 7., el_eta = 2.5, mu_pt = 7., mu_eta = 2.4) :
@@ -504,7 +561,7 @@ class LeptonDefinitionCut(Cut) :
             return False
 
 class ZPairDefinitionCut(Cut) :
-    def __init__(self, step_name, lower_mass = 66., upper_mass = 116.) :
+    def __init__(self, step_name, lower_mass = 60., upper_mass = 120.) :
         super(ZPairDefinitionCut, self).__init__(step_name)
         self.CutAbbreviation = "2ZDEF"
         self.ZLowerMassCut = lower_mass
