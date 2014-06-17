@@ -387,20 +387,20 @@ class LeptonAcceptanceAnalysisCut(Cut) :
         if data_type == "GEN" :
             ExtractObjectsFromGenRecord(event)
             for mu in event.GenMuon :
-                if abs(mu.Eta) < 2.4 and mu.PT > 10. :
+                if abs(mu.Eta) < self.MuEtaCut and mu.PT > self.MuPtCut :
                     goodMuons.append(mu)
 
             for el in event.GenElectron :
-                if abs(el.Eta) < 2.5 and el.PT > 4. :
+                if abs(el.Eta) < self.ElEtaCut and el.PT > self.ElPtCut :
                     goodElectrons.append(el)
 
         if data_type == "SIM" :
             for mu in event.data.Muon :
-                if abs(mu.Eta) < 2.4 and mu.PT > 10. :
+                if abs(mu.Eta) < self.MuEtaCut and mu.PT > self.MuPtCut :
                     goodMuons.append(mu)
 
             for el in event.data.Electron :
-                if abs(el.Eta) < 2.5 and el.PT > 4. :
+                if abs(el.Eta) < self.ElEtaCut and el.PT > self.ElPtCut :
                     goodElectrons.append(el)
 
         goodLeptons = []

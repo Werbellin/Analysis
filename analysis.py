@@ -91,7 +91,7 @@ print "Finished reading data.xml"
 newStepList =[  Start("Total events processed"),
                 LeptonTriggerCut("Trigger RunI"),
                 LeptonTriggerCut("Trigger RunII", l_leading_pt = 20., l_subleading_pt = 10.),
-                #LeptonAcceptanceAnalysisCut("Delphes")]
+                #LeptonAcceptanceAnalysisCut("Delphes", el_pt = 6., el_eta = 2.5, mu_pt = 6., mu_eta = 2.5)]
                 AllLeptonPtEtaPlot("Lepton plots"),
                 JetMultiplicityPlot("JetMul"),
                 LeptonDefinitionCut("Lepton Acceptance"),
