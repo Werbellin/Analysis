@@ -40,9 +40,9 @@ logger = logging.getLogger('log')
 
 logging.debug("Opening XML datafile")
 #tree = ET.parse('SeperateFinalStates.xml')
-#tree = ET.parse('test.xml')
-#tree = ET.parse('LHE.xml')
-tree = ET.parse('data.xml')
+tree = ET.parse('NPAC_talk.xml')
+#tree = ET.parse('eff.xml')
+#tree = ET.parse('data_Hv1.xml')
 root = tree.getroot()
 
 class Data :
@@ -90,11 +90,11 @@ print "Finished reading data.xml"
 
 newStepList =[  Start("Total events processed"),
                 LeptonTriggerCut("Trigger RunI"),
-                LeptonTriggerCut("Trigger RunII", l_leading_pt = 20., l_subleading_pt = 10.),
+                LeptonTriggerCut("Trigger RunII", l_leading_pt = 22., l_subleading_pt = 10.),
                 #LeptonAcceptanceAnalysisCut("Delphes", el_pt = 6., el_eta = 2.5, mu_pt = 6., mu_eta = 2.5)]
                 AllLeptonPtEtaPlot("Lepton plots"),
                 JetMultiplicityPlot("JetMul"),
-                LeptonDefinitionCut("Lepton Acceptance"),
+                LeptonDefinitionCut("Lepton Acceptance", el_eta = 3.0),
                 GoodLeptonPtEtaPlot("GoodLeptons"),
                 ZPairMassPlot("ZMass"),
                 #TrueZCut("trueZ"),
@@ -103,22 +103,31 @@ newStepList =[  Start("Total events processed"),
                 Z1LeptonPtPlot("Z1 Lepton pT"),
                 GoodLeptonPtEtaPlot("Z leptons"),
                 LeptonIsolationPlot("R of Z Leptons"),
-                DefineTaggingJetsCut("DefineTaggingJets"),
+                DefineTaggingJetsCut("DefineTaggingJets", jet_pt = 30.0, jet_eta = 4.7),
                 TaggingJetKinematicsPlot("TJ kinematics"),
                 TaggingJetZKinematicsPlot("TJZ kinematics"),
                 ZKinematics("Kinematics of Z bosons"),
                 ZJetsKinematics("Kinematics of TJ1 and L1/2"),
                 ZeppenfeldVariablesPlot("YStar1"),
-                TaggingJetRapidityGapCut("Tagging jet rapidity gap"),
+                TaggingJetRapidityGapCut("Tagging jet rapidity gap 2"),
+                GoodLeptonPtEtaPlot("Z leptons 2"),
+                #TaggingJetKinematicsPlot("TJ kinematics 2"),
                 #JetVetoCut("Jet veto"),
+                TaggingJetKinematicsPlot("TJ kinematics 3"),
                 TaggingJetInvariantMassCut("Invariant mass of tagging jets"),
+                TaggingJetKinematicsPlot("TJ kinematics 2"),
+                TaggingJetInvariantMassCut("Invariant mass of tagging jets 2", mass_cut = 600.),
+                TaggingJetInvariantMassCut("Invariant mass of tagging jets 3", mass_cut = 700.),
+                ZeppenfeldVariablesPlot("YStar1"),
                 TaggingJetKinematicsPlot("TJ kinematics"),
-                TaggingJetInvariantMassCut("Invariant mass of tagging jets", mass_cut = 600.),
-                TaggingJetInvariantMassCut("Invariant mass of tagging jets", mass_cut = 700.),
+                GoodLeptonPtEtaPlot("Z leptons 3"),
+                #TaggingJetRapidityGapCut("Tagging jet rapidity gap"),
                 LeptonsBetweenTaggingJetsEtaCut("Leptons between tagging jets"),
-                TaggingJetY1Y2Cut("Cut on y1y2"),
+                #TaggingJetY1Y2Cut("Cut on y1y2"),
+                GoodLeptonPtEtaPlot("Z leptons"),
+                JetMultiplicityPlot("Jet multiplicity"),
                 JetVetoCut("Jet veto"),
-                JetVetoCut("Jet veto", pt_cut = 20.),
+                JetVetoCut("Jet veto 2", pt_cut = 20.),
                 LeptonIsolationPlot("R of Z Leptons"),
                 GoodLeptonPtEtaPlot("Leptons between jets")]
 

@@ -195,7 +195,7 @@ class DefineTaggingJetsCut(Cut) :
                     goodJets.append(jet)
         if data_type == "GEN" :
             for jet in event.GenJet :
-                 if jet.PT > self.JetPtCut and abs(jet.Eta) < self.JetEtaCut :
+                if jet.PT > self.JetPtCut and abs(jet.Eta) < self.JetEtaCut :
                     goodJets.append(jet)
         goodJets.sort(key=lambda x: x.PT, reverse=True)
 

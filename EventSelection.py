@@ -107,16 +107,16 @@ class EventSelection :
                 background[str(step)] += step.NumberEventsPassedCut / data.totalNumberEvents * data.xsection
 
         for step in self._CutList[self.currentDataset] :
-            s = signal[str(step)] * math.sqrt(self.luminosity)
-            b = math.sqrt(background[str(step)])
+            s = signal[str(step)]
+            b = math.sqrt(background[str(step)] + s)
             if b <> 0. :
-                significance.append( (str(step), s / b))
+                significance.append( (str(step), s / b * math.sqrt(self.luminosity) ) )
             else:
                 significance.append((str(step), -1))
 
         template = "{0:55}|{1:25}"
         print str_single
-        print template.format("Cut name", "S/√B @ " + "{:3.2f}".format(self.luminosity) + "fb⁻¹")
+        print template.format("Cut name", "S/√S+B @ " + "{:3.2f}".format(self.luminosity) + "fb⁻¹")
         print str_single
         significanceFormated = []
         for tuple in significance :
@@ -170,7 +170,12 @@ class EventSelection :
         for data in self.dataset :
             for hist in self.Histos[data.name] :
                 hist.SetTitle(data.name)
-                #if data.name.find("GEN")<> -1 :
+                #print hist.GetName()
+                if hist.GetName().find("LeptonMass") <> -1 :
+                    #print "Found 4 lepton plot"
+                    hist.GetXaxis().SetTitle("m_{4l}")
+                    hist.GetYaxis().SetTitle("Events/20GeV")
+                hist.SetLineWidth(3)
                 #    hist.SetLineColor(2)
                 #if data.name.find("SIM")<> -1 :
                 #    hist.SetLineColor(3)
@@ -180,8 +185,9 @@ class EventSelection :
                 #print "Trying to retrieve",hist.GetName()[len(data.name):]
                 #print "Content of stackdir: ", stackdir
                 stack = stackdir[hist.GetName()[len(data.name):]]
-                #if hist.Integral() <> 0. :
-                #    hist.Scale(1.0/hist.Integral(), "width")
+                if hist.Integral() <> 0. :
+                    hist.Scale( data.xsection * self.luminosity / data.totalNumberEvents )
+                    #hist.Scale(1.0/hist.Integral(), "width")
                 stack.Add(hist)
 
 
@@ -189,7 +195,13 @@ class EventSelection :
             canvas = TCanvas()
             stack.Draw("nostack")
             canvas.BuildLegend()
+            canvas.SetLogy()
+            if stack.GetName().find("LeptonMass") <> -1 :
+                #print "found stack"
+                stack.GetXaxis().SetTitle("m_{4l}")
+                stack.GetYaxis().SetTitle("Events/20GeV")
             #stack.Draw("nostack")
+            stack.SetTitle("")
             canvas.Print("output//" + stack.GetName() + ".png")
             stack.Write()
 

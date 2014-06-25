@@ -30,7 +30,7 @@ class ZPairMassPlot(AddPlot) :
 
     def Initialize(self, Histos, data_name, cut_flow) :
         super(ZPairMassPlot,self).Initialize(Histos, data_name, cut_flow)
-        Jmul_bin  = 40
+        Jmul_bin  = 20
         Jmul_max  = 400.
         Jmul_min  = 0.
         self.ZPairMass = TH2D(self.DataName +self.Cutflow+ "-ZPairMass","Z pair mass distribution", Jmul_bin, Jmul_min, Jmul_max, Jmul_bin, Jmul_min, Jmul_max)
@@ -78,9 +78,13 @@ class JetMultiplicityPlot(AddPlot) :
     def PerformStep(self, event, Histos, data_type) :
         jetMul = 0
         if data_type == "SIM" :
-            for jet in event.data.Jet : jetMul += 1
+            for jet in event.data.Jet : 
+                if jet.PT > 20.0 :
+                    jetMul += 1
         if data_type == "Gen" :
-            for jet in event.data.GenJet : jetMul+= 1
+            for jet in event.data.GenJet : 
+                if jet.PT > 20.0 :
+                    jetMul+= 1
         self.JetMultiplicity.Fill(jetMul)
         return True
 
@@ -91,13 +95,13 @@ class ZeppenfeldVariablesPlot(AddPlot) :
     def Initialize(self, Histos, data_name, cut_flow) :
         super(ZeppenfeldVariablesPlot,self).Initialize(Histos, data_name, cut_flow)
         self.Cutflow = cut_flow
-        Y1Star_bin  = 96
+        Y1Star_bin  = 12
         Y1Star_max  = 4.8
         Y1Star_min  = 4.8
         self.Y1Star = TH1D(self.DataName +self.Cutflow+ "Y1Star","y* of Z_1", Y1Star_bin, Y1Star_min, Y1Star_max)
         Histos.append(self.Y1Star)
 
-        Y2Star_bin  = 96
+        Y2Star_bin  = 12
         Y2Star_max  = 4.8
         Y2Star_min  = 4.8
         self.Y2Star = TH1D(self.DataName +self.Cutflow+ "Y2Star","y* of Z_2", Y2Star_bin, Y2Star_min, Y2Star_max)
@@ -143,6 +147,7 @@ class TaggingJetKinematicsPlot(AddPlot) :
 
     def Initialize(self, Histos, data_name, cut_flow) :
         super(TaggingJetKinematicsPlot,self).Initialize(Histos, data_name, cut_flow)
+        self.AddHistogram("TJ1E", "-TJ1E", "E of leading jet;E_{j1}", 0., 500., 50)
         ES_bin = 100
         ES_min = -10.
         ES_max = 10.
@@ -153,7 +158,7 @@ class TaggingJetKinematicsPlot(AddPlot) :
         M_max = 2000.
         self.TaggingJetMass = TH1D(self.DataName + self.Cutflow + "-TJMass","Mass of tagging jets",M_bin, M_min, M_max)
         Histos.append(self.TaggingJetMass)
-        DY_bin = 100
+        DY_bin = 30
         DY_min = 0.0
         DY_max = 9.0
         self.TaggingJetRapidityGap = TH1D(self.DataName + self.Cutflow + "-TJDY","Rapidity gap of tagging jets;#delta(j,j)",DY_bin, DY_min, DY_max)
@@ -164,13 +169,13 @@ class TaggingJetKinematicsPlot(AddPlot) :
         Histos.append(self.TaggingJetY1Y2)
 
 
-        PT1_bin = 100
+        PT1_bin = 50
         PT1_min = 0.0
         PT1_max = 500.0
         self.TaggingJetLeadingPT = TH1D(self.DataName + self.Cutflow + "-TJ1PT","PT of leading tagging jets",PT1_bin, PT1_min, PT1_max)
         Histos.append(self.TaggingJetLeadingPT)
 
-        PT2_bin = 100
+        PT2_bin = 50
         PT2_min = 0.0
         PT2_max = 500.0
         self.TaggingJetSubleadingPT = TH1D(self.DataName + self.Cutflow + "-TJ2PT","PT of subleading tagging jets",PT2_bin, PT2_min, PT2_max)
@@ -188,7 +193,7 @@ class TaggingJetKinematicsPlot(AddPlot) :
         self.AddHistogram("TJDEtaDY", "TJDEtDaY", "#delta#eta - #delta y;#delta#eta - #delta y",-10., 10., 20)
 
     def PerformStep(self, event, Histos, data_type) :
-        self.TaggingJetMass.Fill((event.TaggingJet1 + event.TaggingJet2).M()) 
+        self.TaggingJetMass.Fill((event.TaggingJet1 + event.TaggingJet2).M())
         self.TaggingJetDPhi.Fill(event.TaggingJetDPhi)
 
         self.TaggingJetLeadingPT.Fill(event.TaggingJet1.Pt())
@@ -199,6 +204,8 @@ class TaggingJetKinematicsPlot(AddPlot) :
         self.TaggingJetEtaSum.Fill(event.TaggingJetEtaSum)
         self.histos["TJEta1Eta2"].Fill(event.TaggingJet1.Eta() * event.TaggingJet2.Eta())
         self.histos["TJDEtaDY"].Fill(abs(event.TaggingJetRapidityGap - event.TaggingJetEtaGap))
+        
+        self.histos["TJ1E"].Fill(event.TaggingJet1.E())
         return True
 
 class AllLeptonPtEtaPlot(AddPlot) :
