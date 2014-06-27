@@ -10,7 +10,7 @@ LEVELS = {'debug': logging.DEBUG,
 
 from collections import Counter#, OrderedDict
 
-from ROOT import TCanvas, TH1D, TH2D, gSystem, TFile, TTree, TLorentzVector, TChain, THStack, TColor
+from ROOT import TCanvas, TH1D, TH2D, gSystem, TFile, TTree, TLorentzVector, TChain, THStack, TColor, TText
 TH1D.SetDefaultSumw2()
 gSystem.Load('libDelphes.so')
 
@@ -22,15 +22,18 @@ logger = logging.getLogger('log')
 
 
 class EventSelection :
-    def __init__(self, dataset, step_list) :
+    def __init__(self, dataset,run_name, step_list) :
         self.dataset = dataset
+        self._RunName = run_name
+
         logger.debug("EventSelection constructor called")
-        self.ROOTFile = TFile("output/A-Result.root","RECREATE");
+        self.ROOTFile = TFile("output/" + self._RunName + "/A-Result.root","RECREATE");
         self.Histos = {}
         self.currentDataset = None
         self.luminosity = 100.
         self._StepList = {}
         self._CutList = {}
+
         for data in dataset :
             self.Histos[data.name] = []
             newStepList = copy.deepcopy(step_list)
@@ -47,7 +50,7 @@ class EventSelection :
     def ChangeDataSet(self, dataset_name) :
         self.currentDataset = dataset_name
         #new_dir = self.ROOTFile.mkdir(dataset_name);
-        #new_dir.cd() 
+        #new_dir.cd()
 
     def SaveHistos(self) :
         for data in self.dataset :
@@ -108,7 +111,7 @@ class EventSelection :
 
         for step in self._CutList[self.currentDataset] :
             s = signal[str(step)]
-            b = math.sqrt(background[str(step)] + s)
+            b = math.sqrt(background[str(step)])
             if b <> 0. :
                 significance.append( (str(step), s / b * math.sqrt(self.luminosity) ) )
             else:
@@ -116,7 +119,7 @@ class EventSelection :
 
         template = "{0:55}|{1:25}"
         print str_single
-        print template.format("Cut name", "S/√S+B @ " + "{:3.2f}".format(self.luminosity) + "fb⁻¹")
+        print template.format("Cut name", "S/√B @ " + "{:3.2f}".format(self.luminosity) + "fb⁻¹")
         print str_single
         significanceFormated = []
         for tuple in significance :
@@ -151,21 +154,25 @@ class EventSelection :
                 tuple = (item.__str__(), evtNumberMCFile, "{:10.3f}".format(evtNumberActual) , "{:10.2f}".format(diff) , "{:10.1f}".format(eff))
                 print template.format(*tuple)
             print str_single
-    def Finalize(self) :
+    def Finalize(self, plot_normalization = "LUMI") :
+        selection = ""
+        self.PlotNormalization = plot_normalization
         for data in self.dataset :
         #self.currentDataset = dataset_name
             data_dir = self.ROOTFile.mkdir(data.name)
             data_dir.cd()
             #print data.name, self.Histos
             for hist in self.Histos[data.name] :
+                selection = hist.GetName()
                 hist.Write()
                 hist.SetLineColor(data.LineColor)
+                hist.SetMarkerColor(data.LineColor)
 
         data_dir = self.ROOTFile.mkdir("Combined")
         data_dir.cd()
         stackdir = {}
         for hist in self.Histos[self.currentDataset] :
-            stack = THStack(hist.GetName()[len(self.currentDataset):], hist.GetName()[len(self.currentDataset):])
+            stack = THStack(hist.GetName()[len(self.currentDataset):], hist.GetTitle())
             stackdir[hist.GetName()[len(self.currentDataset):]] = stack
         for data in self.dataset :
             for hist in self.Histos[data.name] :
@@ -186,23 +193,34 @@ class EventSelection :
                 #print "Content of stackdir: ", stackdir
                 stack = stackdir[hist.GetName()[len(data.name):]]
                 if hist.Integral() <> 0. :
-                    hist.Scale( data.xsection * self.luminosity / data.totalNumberEvents )
-                    #hist.Scale(1.0/hist.Integral(), "width")
+                    if self.PlotNormalization == "LUMI" :
+                        hist.Scale( data.xsection * self.luminosity / data.totalNumberEvents )
+                    if self.PlotNormalization == "PDF_WIDTH" :
+                        hist.Scale(1.0/hist.Integral(), "width")
                 stack.Add(hist)
+                stack.Draw()
+                stack.GetHistogram().GetXaxis().SetTitle(hist.GetXaxis().GetTitle())
+                stack.GetHistogram().GetYaxis().SetTitle(hist.GetYaxis().GetTitle())
+
 
 
         for stack in stackdir.itervalues() :
             canvas = TCanvas()
             stack.Draw("nostack")
+            #canvas.Divide(1,2)
+            #canvas.cd(1)
             canvas.BuildLegend()
-            canvas.SetLogy()
-            if stack.GetName().find("LeptonMass") <> -1 :
+            #canvas.SetLogy()
+            #if stack.GetName().find("LeptonMass") <> -1 :
                 #print "found stack"
-                stack.GetXaxis().SetTitle("m_{4l}")
-                stack.GetYaxis().SetTitle("Events/20GeV")
+                #stack.GetXaxis().SetTitle("m_{4l}")
+                #stack.GetYaxis().SetTitle("Events/20GeV")
             #stack.Draw("nostack")
-            stack.SetTitle("")
-            canvas.Print("output//" + stack.GetName() + ".png")
+            #stack.SetTitle("")
+            #canvas.cd(2)
+            text = TText()
+            #text.DrawText(0, 0, selection)
+            canvas.Print("output//" + self._RunName + "//" + stack.GetName() + ".png")
             stack.Write()
 
 

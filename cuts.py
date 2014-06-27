@@ -31,6 +31,27 @@ class Start(Cut) :
         self.NumberEventsPassedCut += 1.0
         return True
 
+class ZZRapidityCut(Cut) :
+    def __init__(self, step_name) :
+        super(ZZRapidityCut, self).__init__(step_name)
+        self.CutAbbreviation = "ZZY"
+    def Initialize(self, Histos, data_name, cut_flow, ZZy_cut = 0.2) :
+        super(ZZRapidityCut,self).Initialize(Histos, data_name, cut_flow)
+        self.ZZyCut = ZZy_cut
+    def __str__(self) :
+        name = self.name + " [y_ZZ > " + str(self.ZZyCut) + "]"
+        return name
+
+    def PerformStep(self, event, Histos, data_type) :
+        logging.debug("Called ApplyCut of " + self.name + " cut" )
+
+        if event.ZZRapidity >= self.ZZyCut :
+            self.NumberEventsPassedCut += 1.0
+            return True
+        else :
+            return False
+
+
 class ZeppenfeldVariableCut(Cut) :
     def __init__(self, step_name) :
         super(ZeppenfeldVariableCut, self).__init__(step_name)
@@ -197,6 +218,18 @@ class DefineTaggingJetsCut(Cut) :
             for jet in event.GenJet :
                 if jet.PT > self.JetPtCut and abs(jet.Eta) < self.JetEtaCut :
                     goodJets.append(jet)
+
+        if data_type == "PARTON" :
+            for particle in event.data.Particle :
+                PID = abs(particle.PID)
+                status = particle.Status
+                if PID == 4 or PID == 3 or PID == 2 or PID == 1 :
+                    #if status == 1:
+                        #print PID, " status ", status
+
+                    if particle.PT > self.JetPtCut and abs(particle.Eta) < self.JetEtaCut :
+                        goodJets.append(particle)
+
         goodJets.sort(key=lambda x: x.PT, reverse=True)
 
         if len(goodJets) >= 2 :
@@ -454,7 +487,7 @@ class LeptonTriggerCut(Cut) :
         Muons       = []
         Electrons   = []
 
-        if data_type == "GEN" :
+        if data_type == "GEN" or data_type == "PARTON" :
             ExtractObjectsFromGenRecord(event)
             for mu in event.GenMuon :
                 if abs(mu.Eta) < 2.4 :
@@ -517,7 +550,7 @@ class LeptonDefinitionCut(Cut) :
         goodMuons       = []
         goodElectrons   = []
 
-        if data_type == "GEN" :
+        if data_type == "GEN"  or data_type == "PARTON":
             ExtractObjectsFromGenRecord(event)
             for mu in event.GenMuon :
                 if abs(mu.Eta) < 2.4 and mu.PT > 7. :

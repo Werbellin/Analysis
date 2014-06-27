@@ -38,11 +38,27 @@ if len(sys.argv) > 1:
 
 logger = logging.getLogger('log')
 
+from  time import strftime
+RunName = strftime("%Y-%m-%d %H:%M:%S")
+#if not os.path.exists(RunName): 
+os.makedirs("output//" + RunName)
+
+class Tee(object):
+     def __init__(self, *files):
+         self.files = files
+     def write(self, obj):
+         for f in self.files:
+             f.write(obj)
+
+f = open('out.txt', 'w')
+original = sys.stdout
+#sys.stdout = Tee(sys.stdout, f)
+
 logging.debug("Opening XML datafile")
 #tree = ET.parse('SeperateFinalStates.xml')
-tree = ET.parse('NPAC_talk.xml')
+#tree = ET.parse('NPAC_talk.xml')
 #tree = ET.parse('eff.xml')
-#tree = ET.parse('data_Hv1.xml')
+tree = ET.parse('data_Hv1.xml')
 root = tree.getroot()
 
 class Data :
@@ -100,16 +116,22 @@ newStepList =[  Start("Total events processed"),
                 #TrueZCut("trueZ"),
                 ZPairDefinitionCut("Two Z candidates"),
                 ZPairMassPlot("ZMass"),
+                ZZRapidityPlot("ZZ system boost"),
+                #ZZRapidityCut("ZZ y cut"),
                 Z1LeptonPtPlot("Z1 Lepton pT"),
                 GoodLeptonPtEtaPlot("Z leptons"),
                 LeptonIsolationPlot("R of Z Leptons"),
                 DefineTaggingJetsCut("DefineTaggingJets", jet_pt = 30.0, jet_eta = 4.7),
+                YStarZZPlot("y_ZZ"),
+                YEtaPlot("yeta"),
                 TaggingJetKinematicsPlot("TJ kinematics"),
                 TaggingJetZKinematicsPlot("TJZ kinematics"),
                 ZKinematics("Kinematics of Z bosons"),
                 ZJetsKinematics("Kinematics of TJ1 and L1/2"),
                 ZeppenfeldVariablesPlot("YStar1"),
                 TaggingJetRapidityGapCut("Tagging jet rapidity gap 2"),
+                ZZRapidityPlot("ZZ system boost"),
+                YStarZZPlot("y_ZZ"),
                 GoodLeptonPtEtaPlot("Z leptons 2"),
                 #TaggingJetKinematicsPlot("TJ kinematics 2"),
                 #JetVetoCut("Jet veto"),
@@ -129,10 +151,12 @@ newStepList =[  Start("Total events processed"),
                 JetVetoCut("Jet veto"),
                 JetVetoCut("Jet veto 2", pt_cut = 20.),
                 LeptonIsolationPlot("R of Z Leptons"),
+                YStarZZPlot("y_ZZ"),
+                ZZRapidityPlot("ZZ system boost"),
                 GoodLeptonPtEtaPlot("Leptons between jets")]
 
 
-mEventSelection = EventSelection(RunData, newStepList)
+mEventSelection = EventSelection(RunData,RunName, newStepList)
 
 for data in RunData:
     chain = TChain("Delphes")
@@ -157,4 +181,4 @@ for data in RunData:
 
 mEventSelection.PrintCutflow()
 mEventSelection.GetEfficencies()
-mEventSelection.Finalize()
+mEventSelection.Finalize(plot_normalization = "PDF_WIDTH")

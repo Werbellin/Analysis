@@ -1,15 +1,23 @@
 <?xml version="1.0"?>
 <data>
-    <dataset name="EWK_Delphes" category="Signal"  type="SIM">
-        <xsection>0.4228</xsection>
-        <file>~/CMS/Delphes-3.1.2/ZZ_EWK_13TeV_AcceptanceCuts_Delphes_312BuiltIn.root</file>
-    </dataset>
-   <dataset name="VBF_Delphes" category="VBF" type="GEN">
-        <xsection>0.3496673305</xsection>
-        <file>~/CMS/Delphes-3.1.2/ZZ_210_13TeV_AcceptanceCuts_NoPythia_Delphes312.root</file>
-    </dataset>
-    <dataset name="QCD_Delphes" category="Background"  type="GEN">
+   <dataset name="QCD_Delphes_SIM" category="Background"  type="SIM">
         <xsection>4.422</xsection>
-        <file>~/CMS/Delphes-3.1.2/ZZ_QCD_13TeV_AcceptanceCuts_Delphes_312Mod.root</file>
+        <color>1</color>
+        <file>~/CMS/data/PROPER_ZZ_QCD_13TeV_AcceptanceCuts_Delphes312M1.root</file>
+    </dataset>
+    <dataset name="EWK_Delphes_SIM" category="Signal"  type="SIM">
+        <xsection>0.4228</xsection>
+        <color>2</color>
+        <file>~/CMS/data/PROPER_ZZ_EWK_13TeV_AcceptanceCuts_Delphes312M1.root</file>
+    </dataset>
+    <dataset name="EWK_Delphes_GEN" category="TEST"  type="GEN">
+        <xsection>0.4228</xsection>
+        <color>3</color>
+        <file>~/CMS/data/PROPER_ZZ_EWK_13TeV_AcceptanceCuts_Delphes312M1.root</file>
+    </dataset>
+    <dataset name="VBF_Delphes_PROPER_SIM" category="VBF"  type="SIM">
+        <xsection>0.380</xsection>
+        <color>4</color>
+        <file>~/CMS/data/ZZ_210_13TeV_CMSSWPythia_AcceptanceCuts_Delphes312M2.root</file>
     </dataset>
 </data>

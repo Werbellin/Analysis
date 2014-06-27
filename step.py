@@ -16,13 +16,21 @@ class AddPlot(Step) :
         super(AddPlot, self).Initialize(data_name, cut_flow)
         self._external_histos = external_histos
     def AddHistogram(self, local_name, ROOT_name, title, x_min, x_max, x_bin) :
-
         if local_name in self.histos :
             logging.error("Trying to add histgram with exact name")
         else :
             self.histos[local_name] = TH1D(self.DataName + self.Cutflow + "-" + ROOT_name,
                                            title, x_bin, x_min, x_max)
             self._external_histos.append(self.histos[local_name])
+
+    def Add2DHistogram(self, local_name, ROOT_name, title, x_min, x_max, x_bin, y_min, y_max, y_bin) :
+        if local_name in self.histos :
+            logging.error("Trying to add histgram with exact name")
+        else :
+            self.histos[local_name] = TH2D(self.DataName + self.Cutflow + "-" + ROOT_name,
+                                           title, x_bin, x_min, x_max, y_bin, y_min, y_max)
+            self._external_histos.append(self.histos[local_name])
+
 
 class ZPairMassPlot(AddPlot) :
     def __init__(self, step_name) :
@@ -47,6 +55,49 @@ class ZPairMassPlot(AddPlot) :
                 Z2Mass = (event.goodElectrons[0].P4() + event.goodElectrons[1].P4()).M()
         
         self.ZPairMass.Fill(Z1Mass, Z2Mass)
+        return True 
+
+
+class ZZRapidityPlot(AddPlot) :
+    def __init__(self, step_name) :
+        super(ZZRapidityPlot, self).__init__(step_name)
+
+    def Initialize(self, Histos, data_name, cut_flow) :
+        super(ZZRapidityPlot,self).Initialize(Histos, data_name, cut_flow)
+        self.AddHistogram("ZZRapidity", "ZZRapidity", "Rapidity of ZZ system;y_{ZZ};Events/0.50 a.u.", 0., 5., 10)
+
+    def PerformStep(self, event, Histos, data_type) :
+        ZZRapidity = (event.Z1Particles[0] + event.Z1Particles[1] + event.Z2Particles[0] + event.Z2Particles[1]).Rapidity()
+        ZZRapidity = abs(ZZRapidity)
+        event.ZZRapidity = ZZRapidity
+        self.histos["ZZRapidity"].Fill(ZZRapidity)
+        return True
+
+class YEtaPlot(AddPlot) :
+    def __init__(self, step_name) :
+        super(YEtaPlot, self).__init__(step_name)
+
+    def Initialize(self, Histos, data_name, cut_flow) :
+        super(YEtaPlot,self).Initialize(Histos, data_name, cut_flow)
+        self.Add2DHistogram("YEta", "YEta", "y vs eta;y_{ZZ};Events/0.50 a.u.", -5., 5., 50, -5., 5., 50)
+
+    def PerformStep(self, event, Histos, data_type) :
+        self.histos["YEta"].Fill(event.TaggingJet1.Rapidity(), event.TaggingJet1.Eta())
+        return True
+
+class YStarZZPlot(AddPlot) :
+    def __init__(self, step_name) :
+        super(YStarZZPlot, self).__init__(step_name)
+
+    def Initialize(self, Histos, data_name, cut_flow) :
+        super(YStarZZPlot,self).Initialize(Histos, data_name, cut_flow)
+        self.AddHistogram("YStarZZ", "YStarZZ", "Zeppenfeld variable of ZZ system;y*_{ZZ};Events/0.50 a.u.", 0., 5., 10)
+
+    def PerformStep(self, event, Histos, data_type) :
+        ZZRapidity = (event.Z1Particles[0] + event.Z1Particles[1] + event.Z2Particles[0] + event.Z2Particles[1]).Rapidity()
+        YZZ = ZZRapidity - 0.5 * (event.TaggingJet1.Rapidity() + event.TaggingJet2.Rapidity())
+        YZZ = abs(YZZ)
+        self.histos["YStarZZ"].Fill(YZZ)
         return True
 
 class Z1LeptonPtPlot(AddPlot) :
@@ -147,65 +198,30 @@ class TaggingJetKinematicsPlot(AddPlot) :
 
     def Initialize(self, Histos, data_name, cut_flow) :
         super(TaggingJetKinematicsPlot,self).Initialize(Histos, data_name, cut_flow)
-        self.AddHistogram("TJ1E", "-TJ1E", "E of leading jet;E_{j1}", 0., 500., 50)
-        ES_bin = 100
-        ES_min = -10.
-        ES_max = 10.
-        self.TaggingJetEtaSum = TH1D(self.DataName + self.Cutflow + "-TJETASUM","Mass of tagging jets;m_{jj}",ES_bin, ES_min, ES_max)
-        Histos.append(self.TaggingJetEtaSum)
-        M_bin = 100
-        M_min = 0.
-        M_max = 2000.
-        self.TaggingJetMass = TH1D(self.DataName + self.Cutflow + "-TJMass","Mass of tagging jets",M_bin, M_min, M_max)
-        Histos.append(self.TaggingJetMass)
-        DY_bin = 30
-        DY_min = 0.0
-        DY_max = 9.0
-        self.TaggingJetRapidityGap = TH1D(self.DataName + self.Cutflow + "-TJDY","Rapidity gap of tagging jets;#delta(j,j)",DY_bin, DY_min, DY_max)
-        H_bin = 60
-        H_min = -15.0
-        H_max = 15.0
-        self.TaggingJetY1Y2 = TH1D(self.DataName + self.Cutflow + "-TJY1Y2"," y_{1} * y_{2} of  tagging jets",H_bin, H_min, H_max)
-        Histos.append(self.TaggingJetY1Y2)
-
-
-        PT1_bin = 50
-        PT1_min = 0.0
-        PT1_max = 500.0
-        self.TaggingJetLeadingPT = TH1D(self.DataName + self.Cutflow + "-TJ1PT","PT of leading tagging jets",PT1_bin, PT1_min, PT1_max)
-        Histos.append(self.TaggingJetLeadingPT)
-
-        PT2_bin = 50
-        PT2_min = 0.0
-        PT2_max = 500.0
-        self.TaggingJetSubleadingPT = TH1D(self.DataName + self.Cutflow + "-TJ2PT","PT of subleading tagging jets",PT2_bin, PT2_min, PT2_max)
-        Histos.append(self.TaggingJetSubleadingPT)
-
-        DPhi_bin = 100
-        DPhi_min = 0.0
-        DPhi_max = 7.0
-        self.TaggingJetDPhi = TH1D(self.DataName + self.Cutflow + "TJDPhi","Delta phi of tagging jets",DPhi_bin, DPhi_min, DPhi_max)
-        Histos.append(self.TaggingJetDPhi)
-
-        Histos.append(self.TaggingJetRapidityGap)
-
-        self.AddHistogram("TJEta1Eta2", "Eta1Eta2", "#eta_{j_1}#eta_{j_2}", -10., 10., 10)
-        self.AddHistogram("TJDEtaDY", "TJDEtDaY", "#delta#eta - #delta y;#delta#eta - #delta y",-10., 10., 20)
+        self.AddHistogram("TJ1E", "TJ1E", "E of leading jet;E_{j_{1}};Events/10 GeV", 0., 800., 80)
+        self.AddHistogram("TJ2E", "TJ2E", "E of subleading jet;E_{j_{2}};Events/10 GeV", 0., 800., 80)
+        self.AddHistogram("TJETASUM", "TJETASUM", "ll_{j_{1}} + ta_{j_{2}};#eta_{j1} + #eta_{j2};Events/1 a.u.", -10., 10., 20)
+        self.AddHistogram("TJMASS", "TJMASS", "Invariant mass of tagging jets;m_{jj};Events/20 GeV", 0., 2000., 100)
+        self.AddHistogram("TJDY", "TJDY", "Rapidity gap of tagging jets;#delta(j,j);Events/0.3 a.u. ", 0., 9., 30)
+        self.AddHistogram("TJY1Y2", "TJY1Y2", "y_{1} * y_{2} of  tagging jets;y_{j_{1}}*y_{j_{2}};Events/0.5 a.u.", -15., 15., 60)
+        self.AddHistogram("TJ1PT", "TJ1PT", "p_T of  leading tagging jet;p_{T}^{j_{1}};Events/10 GeV", 0., 500., 50)
+        self.AddHistogram("TJ2PT", "TJ2PT", "p_T of  subleading tagging jet;p_{T}^{j_{2}};Events/10 GeV", 0., 500., 50)
+        self.AddHistogram("TJDPhi", "TJDPhi", "#phi_{1}-#phi_{2} for  tagging jets;#Delta#phi_{jj};Events/0.07 a.u.", 0., 7., 100)
+        self.AddHistogram("TJEta1Eta2", "Eta1Eta2", "ll_{j_1}ta_{j_2};Events/2.0 a.u.", -10., 10., 10)
+        self.AddHistogram("TJDEtaDY", "TJDEtDaY", "#deltall - #delta y;#deltata - #delta y;Events/1.0 a.u.",-10., 10., 20)
 
     def PerformStep(self, event, Histos, data_type) :
-        self.TaggingJetMass.Fill((event.TaggingJet1 + event.TaggingJet2).M())
-        self.TaggingJetDPhi.Fill(event.TaggingJetDPhi)
-
-        self.TaggingJetLeadingPT.Fill(event.TaggingJet1.Pt())
-        self.TaggingJetSubleadingPT.Fill(event.TaggingJet2.Pt())
-        self.TaggingJetY1Y2.Fill(event.TaggingJetY1Y2)
-        self.TaggingJetRapidityGap.Fill(event.TaggingJetRapidityGap)
-
-        self.TaggingJetEtaSum.Fill(event.TaggingJetEtaSum)
+        self.histos["TJMASS"].Fill((event.TaggingJet1 + event.TaggingJet2).M())
+        self.histos["TJDPhi"].Fill(event.TaggingJetDPhi)
+        self.histos["TJ1PT"].Fill(event.TaggingJet1.Pt())
+        self.histos["TJ2PT"].Fill(event.TaggingJet2.Pt())
+        self.histos["TJY1Y2"].Fill(event.TaggingJetY1Y2)
+        self.histos["TJDY"].Fill(event.TaggingJetRapidityGap)
+        self.histos["TJETASUM"].Fill(event.TaggingJetEtaSum)
         self.histos["TJEta1Eta2"].Fill(event.TaggingJet1.Eta() * event.TaggingJet2.Eta())
         self.histos["TJDEtaDY"].Fill(abs(event.TaggingJetRapidityGap - event.TaggingJetEtaGap))
-        
         self.histos["TJ1E"].Fill(event.TaggingJet1.E())
+        self.histos["TJ2E"].Fill(event.TaggingJet2.E())
         return True
 
 class AllLeptonPtEtaPlot(AddPlot) :
@@ -287,39 +303,17 @@ class GoodLeptonPtEtaPlot(AddPlot) :
     def Initialize(self, Histos, data_name, cut_flow) :
         super(GoodLeptonPtEtaPlot,self).Initialize(Histos, data_name, cut_flow)
 
-        eta_bin = 56
-        eta_max  = 2.8
-        eta_min  = -2.8
-        self.LeadingGoodLeptonEta = TH1D(self.DataName +self.Cutflow+ "LeadingGoodLeptonEta","Eta of leading lepton", eta_bin, eta_min, eta_max)
-        self.SubleadingGoodLeptonEta = TH1D(self.DataName +self.Cutflow+ "SubleadingGoodLeptonEta","Eta of subleading lepton",eta_bin, eta_min, eta_max)
-        self.ThirdleadingGoodLeptonEta = TH1D(self.DataName +self.Cutflow+ "ThirdleadingGoodLeptonEta","Eta of third lepton",eta_bin, eta_min, eta_max)
-        self.FourthleadingGoodLeptonEta = TH1D(self.DataName +self.Cutflow+ "FourthleadingGoodLeptonEta","#eta of the fourth lepton;#eta;leptons",eta_bin, eta_min, eta_max)
-        Histos.append(self.LeadingGoodLeptonEta)
-        Histos.append(self.SubleadingGoodLeptonEta)
-        Histos.append(self.ThirdleadingGoodLeptonEta)
-        Histos.append(self.FourthleadingGoodLeptonEta)
+        self.AddHistogram("GL1ETA", "GL1ETA", "Leading good lepton #eta;\eta_{\ell_{1}};Events/0.1 a.u.", -2.8, 2.8, 56)
+        self.AddHistogram("GL2ETA", "GL2ETA", "Subleading good lepton #eta;\eta_{\ell _{2}};Events/0.1 a.u.", -2.8, 2.8, 56)
+        self.AddHistogram("GL3ETA", "GL3ETA", "3rd good lepton #eta;\eta_{\ell_{3}};Events/0.1 a.u.", -2.8, 2.8, 56)
+        self.AddHistogram("GL4ETA", "GL4ETA", "4th good lepton #eta;\eta_{\ell_4};Events/0.1 a.u.", -2.8, 2.8, 56)
 
-        PT_bin = 400
-        PT_max  = 400.
-        PT_min  = 0.
+        self.AddHistogram("GL1PT", "GL1PT", "Leading good lepton p_{T};p_{T}^{l_{1}};Events/1 GeV", 0., 400., 400)
+        self.AddHistogram("GL2PT", "GL2PT", "Subleading good lepton p_{T};p_{T}^{l2};Events/1 GeV", 0., 400., 400)
+        self.AddHistogram("GL3PT", "GL3PT", "3rd good lepton p_{T};p_{T}^{l3};Events/1 GeV", 0., 400., 400)
+        self.AddHistogram("GL4PT", "GL4PT", "4th good lepton p_{T};p_{T}^{l4};Events/2 GeV", 0., 150., 75)
 
-        self.LeadingGoodLeptonPT = TH1D(self.DataName +self.Cutflow+ "LeadingGoodLeptonPT","PT of leading lepton", PT_bin, PT_min, PT_max)
-        self.SubleadingGoodLeptonPT = TH1D(self.DataName +self.Cutflow+ "SubleadingGoodLeptonPT","PT of subleading lepton",PT_bin, PT_min, PT_max)
-        self.ThirdleadingGoodLeptonPT = TH1D(self.DataName +self.Cutflow+ "ThirdleadingGoodLeptonPT","PT of third lepton",PT_bin, PT_min, PT_max)
-        self.FourthleadingGoodLeptonPT = TH1D(self.DataName +self.Cutflow+ "FourthleadingGoodLeptonPT","p_{T} of the fourth lepton;p_{T};leptons",75, PT_min, 150.)
-
-        Histos.append(self.LeadingGoodLeptonPT)
-        Histos.append(self.SubleadingGoodLeptonPT)
-        Histos.append(self.ThirdleadingGoodLeptonPT)
-        Histos.append(self.FourthleadingGoodLeptonPT)
-
-        M_bin = 40
-        M_min = 0.
-        M_max = 800.
-        self.FourGoodLeptonMass = TH1D(self.DataName +self.Cutflow+ "FourGoodLeptonMass","Mass of 4 lepton system",M_bin, M_min, M_max)
-
-        Histos.append(self.FourGoodLeptonMass)
-
+        self.AddHistogram("GLMASS", "GLMASS", "Good 4 lepton mass;m_{4\ell};Events/20 GeV", 0., 800., 40)
 
     def PerformStep(self, event, Histos, data_type) :
         fourLepton = TLorentzVector(0,0,0,0)
@@ -327,16 +321,17 @@ class GoodLeptonPtEtaPlot(AddPlot) :
             fourLepton += lepton.P4()
             Mass = fourLepton.M()
 
-        self.LeadingGoodLeptonEta.Fill(event.goodLeptons[0].Eta)
-        self.SubleadingGoodLeptonEta.Fill(event.goodLeptons[1].Eta)
-        self.ThirdleadingGoodLeptonEta.Fill(event.goodLeptons[2].Eta)
-        self.FourthleadingGoodLeptonEta.Fill(event.goodLeptons[3].Eta)
+        self.histos["GL1ETA"].Fill(event.goodLeptons[0].Eta)
+        self.histos["GL2ETA"].Fill(event.goodLeptons[1].Eta)
+        self.histos["GL3ETA"].Fill(event.goodLeptons[2].Eta)
+        self.histos["GL4ETA"].Fill(event.goodLeptons[3].Eta)
 
-        self.LeadingGoodLeptonPT.Fill(event.goodLeptons[0].PT)
-        self.SubleadingGoodLeptonPT.Fill(event.goodLeptons[1].PT)
-        self.ThirdleadingGoodLeptonPT.Fill(event.goodLeptons[2].PT)
-        self.FourthleadingGoodLeptonPT.Fill(event.goodLeptons[3].PT)
-        self.FourGoodLeptonMass.Fill(Mass)
+        self.histos["GL1PT"].Fill(event.goodLeptons[0].PT)
+        self.histos["GL2PT"].Fill(event.goodLeptons[1].PT)
+        self.histos["GL3PT"].Fill(event.goodLeptons[2].PT)
+        self.histos["GL4PT"].Fill(event.goodLeptons[3].PT)
+
+        self.histos["GLMASS"].Fill(Mass)
         return True
 
 class TaggingJetZKinematicsPlot(AddPlot) :
