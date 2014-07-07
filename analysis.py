@@ -56,9 +56,9 @@ original = sys.stdout
 
 logging.debug("Opening XML datafile")
 #tree = ET.parse('SeperateFinalStates.xml')
-#tree = ET.parse('NPAC_talk.xml')
-#tree = ET.parse('eff.xml')
-tree = ET.parse('data_Hv1.xml')
+tree = ET.parse('NPAC_talk.xml')
+#tree = ET.parse('eff_Hv2.xml')
+#tree = ET.parse('data_Hv1.xml')
 root = tree.getroot()
 
 class Data :
@@ -105,23 +105,23 @@ for dataset in root.findall('dataset') :
 print "Finished reading data.xml"
 
 newStepList =[  Start("Total events processed"),
-                LeptonTriggerCut("Trigger RunI"),
                 LeptonTriggerCut("Trigger RunII", l_leading_pt = 22., l_subleading_pt = 10.),
                 #LeptonAcceptanceAnalysisCut("Delphes", el_pt = 6., el_eta = 2.5, mu_pt = 6., mu_eta = 2.5)]
                 AllLeptonPtEtaPlot("Lepton plots"),
                 JetMultiplicityPlot("JetMul"),
-                LeptonDefinitionCut("Lepton Acceptance", el_eta = 3.0),
+                LeptonDefinitionCut("Lepton Acceptance", el_eta = 2.5),
                 GoodLeptonPtEtaPlot("GoodLeptons"),
                 ZPairMassPlot("ZMass"),
                 #TrueZCut("trueZ"),
                 ZPairDefinitionCut("Two Z candidates"),
                 ZPairMassPlot("ZMass"),
-                ZZRapidityPlot("ZZ system boost"),
-                #ZZRapidityCut("ZZ y cut"),
+                ZZKinematicsPlot("ZZ system boost"),
+                ZZRapidityJetMultiPlot("ZZ system boost"),
+               #ZZRapidityCut("ZZ y cut"),
                 Z1LeptonPtPlot("Z1 Lepton pT"),
                 GoodLeptonPtEtaPlot("Z leptons"),
                 LeptonIsolationPlot("R of Z Leptons"),
-                DefineTaggingJetsCut("DefineTaggingJets", jet_pt = 30.0, jet_eta = 4.7),
+                DefineTaggingJetsCut("DefineTaggingJets", jet_pt = 30.0, jet_eta = 5.2),
                 YStarZZPlot("y_ZZ"),
                 YEtaPlot("yeta"),
                 TaggingJetKinematicsPlot("TJ kinematics"),
@@ -130,7 +130,7 @@ newStepList =[  Start("Total events processed"),
                 ZJetsKinematics("Kinematics of TJ1 and L1/2"),
                 ZeppenfeldVariablesPlot("YStar1"),
                 TaggingJetRapidityGapCut("Tagging jet rapidity gap 2"),
-                ZZRapidityPlot("ZZ system boost"),
+                ZZKinematicsPlot("ZZ kinematics boost"),
                 YStarZZPlot("y_ZZ"),
                 GoodLeptonPtEtaPlot("Z leptons 2"),
                 #TaggingJetKinematicsPlot("TJ kinematics 2"),
@@ -152,7 +152,7 @@ newStepList =[  Start("Total events processed"),
                 JetVetoCut("Jet veto 2", pt_cut = 20.),
                 LeptonIsolationPlot("R of Z Leptons"),
                 YStarZZPlot("y_ZZ"),
-                ZZRapidityPlot("ZZ system boost"),
+                ZZKinematicsPlot("ZZ system boost"),
                 GoodLeptonPtEtaPlot("Leptons between jets")]
 
 

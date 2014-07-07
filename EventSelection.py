@@ -154,6 +154,8 @@ class EventSelection :
                 tuple = (item.__str__(), evtNumberMCFile, "{:10.3f}".format(evtNumberActual) , "{:10.2f}".format(diff) , "{:10.1f}".format(eff))
                 print template.format(*tuple)
             print str_single
+
+
     def Finalize(self, plot_normalization = "LUMI") :
         selection = ""
         self.PlotNormalization = plot_normalization
@@ -167,6 +169,13 @@ class EventSelection :
                 hist.Write()
                 hist.SetLineColor(data.LineColor)
                 hist.SetMarkerColor(data.LineColor)
+                hist.SetLineWidth(3)
+                #print hist.__dict__
+                #if hist._normalization == "ONE" and hist.Integral() <> 0.:
+                #    hist.Scale(1.0/hist.Integral())
+                #if hist._drawOption <> "" :
+                #    hist.Draw(hist._drawOption)
+                #    canvas.Print("output//" + self._RunName + "//" + hist.GetName() + ".png")
 
         data_dir = self.ROOTFile.mkdir("Combined")
         data_dir.cd()
@@ -177,20 +186,6 @@ class EventSelection :
         for data in self.dataset :
             for hist in self.Histos[data.name] :
                 hist.SetTitle(data.name)
-                #print hist.GetName()
-                if hist.GetName().find("LeptonMass") <> -1 :
-                    #print "Found 4 lepton plot"
-                    hist.GetXaxis().SetTitle("m_{4l}")
-                    hist.GetYaxis().SetTitle("Events/20GeV")
-                hist.SetLineWidth(3)
-                #    hist.SetLineColor(2)
-                #if data.name.find("SIM")<> -1 :
-                #    hist.SetLineColor(3)
-                #if data.name.find("VBF")<> -1 :
-                #    hist.SetLineColor(6)
-                #print "data.name: ", data.name
-                #print "Trying to retrieve",hist.GetName()[len(data.name):]
-                #print "Content of stackdir: ", stackdir
                 stack = stackdir[hist.GetName()[len(data.name):]]
                 if hist.Integral() <> 0. :
                     if self.PlotNormalization == "LUMI" :
@@ -209,7 +204,7 @@ class EventSelection :
             stack.Draw("nostack")
             #canvas.Divide(1,2)
             #canvas.cd(1)
-            canvas.BuildLegend()
+            #canvas.BuildLegend()
             #canvas.SetLogy()
             #if stack.GetName().find("LeptonMass") <> -1 :
                 #print "found stack"

@@ -223,7 +223,7 @@ class DefineTaggingJetsCut(Cut) :
             for particle in event.data.Particle :
                 PID = abs(particle.PID)
                 status = particle.Status
-                if PID == 4 or PID == 3 or PID == 2 or PID == 1 :
+                if PID == 4 or PID == 3 or PID == 2 or PID == 1 or PID == 9 or PID == 21 :
                     #if status == 1:
                         #print PID, " status ", status
 
@@ -232,7 +232,9 @@ class DefineTaggingJetsCut(Cut) :
 
         goodJets.sort(key=lambda x: x.PT, reverse=True)
 
-        if len(goodJets) >= 2 :
+        event.JetMultiplicity = len(goodJets)
+
+        if event.JetMultiplicity >= 2 :
             event.Cuts[self.name] = True
             TaggingJet1 = goodJets[0]
             TaggingJet2 = goodJets[1]
