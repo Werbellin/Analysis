@@ -16,7 +16,10 @@ LEVELS = {'debug': logging.DEBUG,
           'error': logging.ERROR,
           'critical': logging.CRITICAL}
 
+#logging.basicConfig(level=logging.DEBUG)
 
+log = logging.getLogger(__name__)
+logging.getLogger(__name__).setLevel(logging.INFO)
 
 from ROOT import TCanvas, TH1D, gSystem, TFile, TTree, TLorentzVector, TChain
 TH1D.SetDefaultSumw2()
@@ -42,7 +45,6 @@ def update_progress(progress):
     text = "\rPercent: [{0}] {1}% {2}".format( "#"*block + "-"*(barLength-block), progress*100, status)
     sys.stdout.write(text)
     sys.stdout.flush()
-
 
 def previous_and_next(some_iterable):
     prevs, items, nexts = tee(some_iterable, 3)
@@ -91,9 +93,9 @@ def ExtractObjectsFromGenRecord(event) :
 
 
     for muon in GenMuons :
-        logging.debug(muon)
+        log.debug(muon)
     for el in GenElectrons :
-        logging.debug(el)
+        log.debug(el)
     
    # numberOfObjectsInEvent = len(event.data.Particle.PID)
     #
@@ -109,7 +111,7 @@ def dR(object1, object2) :
 
 def M(object1, object2) :
     M = math.sqrt(2*object1.PT*object2.PT*(math.cosh(object1.Eta - object1.Eta) - math.cos(object1.Phi - object2.Phi)))
-    return M; 
+    return M
 
 def build_matrix(func,args):
     return func(*args)
@@ -124,22 +126,27 @@ def SeperateByCharge(charge, particle_list):
         p_charge = p.Charge
         if p_charge == charge :
             result.append(p)
+    result.sort(key=lambda x: x.PT, reverse=True)
     return result;
         #elif mu_charge < 0:
         #   neg_muons.append(mu)
         #else:
             #print "charge error: ", mu.Charge
+
 def GetZMassMatrix(neg_par, pos_par, lower, upper):
     i = len(neg_par)
     j = len(pos_par)
-    
+
     result= np.zeros(shape=(i,j))
     for n in range(0,i):
         for p in range(0,j):
-            mass = M(neg_par[n],pos_par[p])
-            #massDiffToZ = abs(91.1876 - mass)
-            if mass > lower and mass < upper :
-                result[n][p] = mass
+            #mass = M(neg_par[n],pos_par[p])
+            #print "Mass: ", mass
+            manualMass = (neg_par[n].P4() + pos_par[p].P4()).M()
+            #print "manualMass = ", manualMass
+            if manualMass >= lower and manualMass <= upper :
+                result[n][p] = manualMass
+    log.debug("mass matrix: %s", result)
     return result
 
 def GetScalarPTMatrix(neg_par, pos_par, lower, upper):
@@ -148,80 +155,115 @@ def GetScalarPTMatrix(neg_par, pos_par, lower, upper):
     result= np.zeros(shape=(i,j))
     for n in range(0,i):
         for p in range(0,j):
-            mass = M(neg_par[n],pos_par[p])
-            if mass > lower and mass < upper :
+            #mass = M(neg_par[n],pos_par[p])
+            manualMass = (neg_par[n].P4() + pos_par[p].P4()).M()
+            #print "manualMass = ", manualMass
+            #massDiffToZ = abs(91.1876 - mass)
+            if manualMass >= lower and manualMass <= upper :
+#           if mass > lower and mass < upper :
                 result[n][p] = abs(neg_par[n].PT) + abs(pos_par[p].PT)
     return result
 
 def ZCandidatesMuEl(pos_par_type1, neg_par_type1, pos_par_type2, neg_par_type2, lower, upper):
-    logging.debug('Enterered ZCandidatesMuEl')
+    log.debug('Enterered ZCandidatesMuEl')
     #print "Mass par type 1: ", M(neg_par_type1[0], pos_par_type1[0])
     #print "Mass par type 2: ", M(neg_par_type2[0], pos_par_type2[0])
 
     if len(pos_par_type1) >= 1 and len(neg_par_type1) >= 1 and len(pos_par_type2) >=1 and len(neg_par_type2) >= 1 :
         Z1Mass = (neg_par_type1[0].P4() + pos_par_type1[0].P4()).M()
         Z2Mass = (neg_par_type2[0].P4() + pos_par_type2[0].P4()).M()
+        for lepton in neg_par_type1 :
+            log.debug("Type 1n lepton pT = %s", lepton.PT)
+        for lepton in pos_par_type1 :
+            log.debug("Type 1p lepton pT = %s", lepton.PT)
+        for lepton in neg_par_type2 :
+            log.debug("Type 2n lepton pT = %s", lepton.PT)
+        for lepton in pos_par_type2 :
+            log.debug("Type 2p lepton pT = %s", lepton.PT)
         if Z1Mass <= upper and Z1Mass >= lower and Z2Mass <= upper and Z2Mass >= lower :
             Z1 = (neg_par_type1[0], pos_par_type1[0])
             Z2 = (neg_par_type2[0], pos_par_type2[0])
-
+            log.debug("MuEl found 2 Z candidates")
+            log.debug("m_Z1 = %s , m_Z2 = % s", Z1Mass, Z2Mass)
             return (Z1, Z2)
         else :
             return ()
     else :
         return ()
 
-
 def ZCandidates(pos_par_type1, neg_par_type1, pos_par_type2, neg_par_type2, lower, upper):
-    logging.debug('Enterered ZCandidates')
+    log.debug('Enterered ZCandidates')
+    startAlgo = False
+    if len(pos_par_type1) >= 2 and len(neg_par_type1) >= 2:
+        startAlgo = True
+    if len(pos_par_type2) >= 2 and len(neg_par_type2) >= 2:
+        startAlgo = True
+    if len(pos_par_type2) >= 1 and len(neg_par_type2) >= 1 and \
+       len(pos_par_type1) >= 1 and len(neg_par_type1) >= 1 :
+        startAlgo = True
+    if startAlgo == False :
+        return ()
+    log.debug("Start real algo")
     #print "Mass par type 1: ", M(neg_par_type1[0], pos_par_type1[0])
     #print "Mass par type 2: ", M(neg_par_type2[0], pos_par_type2[0])
 
-    Type1MassMatrix = GetZMassMatrix(neg_par_type1, pos_par_type1, lower, upper) 
+    Type1MassMatrix = GetZMassMatrix(neg_par_type1, pos_par_type1, lower, upper)
     Type2MassMatrix = GetZMassMatrix(neg_par_type2, pos_par_type2, lower, upper)
 
 
-    if len(neg_par_type1) <> 0 and len(pos_par_type1) <> 0 :
-        Type1min = np.absolute(91.1876 - Type1MassMatrix).min()
-        Type1SPTMatrix = GetScalarPTMatrix(neg_par_type1, pos_par_type1, lower, upper)
 
+    if len(neg_par_type1) <> 0 and len(pos_par_type1) <> 0 :
+        ZMassMatrix = np.empty(Type1MassMatrix.shape)
+        ZMassMatrix.fill(91.1876)
+        Type1min = np.absolute(ZMassMatrix - Type1MassMatrix).min()
+        log.debug("Type 1 mass matrix results:")
+        log.debug ("%s", Type1MassMatrix)
+        log.debug("Type1min: %s", Type1min)
+        Type1SPTMatrix = GetScalarPTMatrix(neg_par_type1, pos_par_type1, lower, upper)
     else :
         Type1min = 10e10
         Type1SPTMatrix = np.zeros(1)
     if len(neg_par_type2) <> 0 and len(pos_par_type2) <> 0 :
-        Type2min = np.absolute(91.1876 - Type2MassMatrix).min()    
+        ZMassMatrix = np.empty(Type2MassMatrix.shape)
+        ZMassMatrix.fill(91.1876)
+        Type2min = np.absolute(ZMassMatrix - Type2MassMatrix).min()
+        log.debug("Type 2 mass matrix results: %s", Type2MassMatrix)
+        log.debug("Type2min: %s", Type2min)
         Type2SPTMatrix = GetScalarPTMatrix(neg_par_type2, pos_par_type2, lower, upper)
     else:
         Type2min = 10e10
         Type2SPTMatrix = np.zeros(1)
 
     if Type1min < Type2min and np.sum(Type1MassMatrix,dtype=np.int32) > 0:
-        #print "found a Z1 candidate of type 1 particles!"
+        log.debug("Found a Z1 candidate of type 1 particles!")
         Z1index = np.unravel_index(Type1MassMatrix.argmin(),Type1MassMatrix.shape)
         Z1 = (neg_par_type1[Z1index[0]] , pos_par_type1[Z1index[1]])
         Type1SPTMatrix.itemset(Z1index,0)
          #Type1DiffMatrix.itemset(Z1index,0)
     elif np.sum(Type2MassMatrix,dtype=np.int32) > 0:
-        #print "found a Z1 candidate of type 2 particles!"
+        log.debug("Found a Z1 candidate of type 2 particles!")
         Z1index = np.unravel_index(Type2MassMatrix.argmin(),Type2MassMatrix.shape)
         Z1 = (neg_par_type2[Z1index[0]] , pos_par_type2[Z1index[1]])
         Type2SPTMatrix.itemset(Z1index,0)
-    else : 
-        return ();
+    else :
+        log.debug("Proper Z finder algo found nothing")
+        return ()
 
     Type1SPTmax = Type1SPTMatrix.max()
     Type2SPTmax = Type2SPTMatrix.max()
+    if Type1SPTmax == 0. and Type2SPTmax == 0. :
+        log.debug("Both SPT matrices are zero!")
     if Type1SPTmax > Type2SPTmax and Type1SPTmax <> 0 :
-        #print "found a Z2 candidate of type 1 particles!"
-        Z2index = np.unravel_index(Type1SPTMatrix.argmin(),Type1SPTMatrix.shape)                                                   
+        log.debug("Found a Z2 candidate of type 1 particles!")
+        Z2index = np.unravel_index(Type1SPTMatrix.argmin(),Type1SPTMatrix.shape)
         Z2 = (neg_par_type1[Z2index[0]] , pos_par_type1[Z2index[1]])
         return (Z1, Z2)
-    elif Type2SPTmax > Type1SPTmax and Type2SPTmax <> 0 :                                                                                   
-        #print "found a Z2 candidate of type 2 particles!"                                                                            
-        Z2index = np.unravel_index(Type2SPTMatrix.argmin(),Type2SPTMatrix.shape)                                                     
+    elif Type2SPTmax > Type1SPTmax and Type2SPTmax <> 0 :
+        log.debug("Found a Z2 candidate of type 2 particles!")
+        Z2index = np.unravel_index(Type2SPTMatrix.argmin(),Type2SPTMatrix.shape)
         Z2 = (neg_par_type2[Z2index[0]] , pos_par_type2[Z2index[1]])
         return (Z1, Z2)
     else :
-        return ();  
+        return ()
 
 

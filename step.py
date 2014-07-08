@@ -17,17 +17,22 @@ class AddPlot(Step) :
         self._external_histos = external_histos
     def AddHistogram(self, local_name, title, x_min, x_max, x_bin, normalization = "", draw_option = "")  :
         if local_name in self.histos :
-            logging.error("Trying to add histgram with exact name")
+            logging.error("Trying to add histgram with identical name")
         else :
             temp = TH1D(self.DataName + self.Cutflow + "-" + local_name,
                                            title, x_bin, x_min, x_max)
             print "before", temp
             temp._normalization = normalization
-            temp._drawOption = draw_option
-            print temp.__dict__
+            temp._drawOption    = draw_option
+            #print "dir: ", dir(temp)
+            #print temp.__dict__
             self.histos[local_name] = temp
-            self._external_histos.append(self.histos[local_name])
-            print "after: ", self.histos[local_name].__dict__
+            self._external_histos.append(temp)
+            #print "after: ", self.histos[local_name].__dict__
+            #print "drawOption: ", temp._drawOption
+            print "for loop dir(temp) :"
+            for k in self.histos.iteritems() :
+                print dir(k[1])
     def Add2DHistogram(self, local_name, title, x_min, x_max, x_bin, y_min, y_max, y_bin, normalization = "", draw_option = "") :
         if local_name in self.histos :
             logging.error("Trying to add histgram with exact name")

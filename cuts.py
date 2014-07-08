@@ -6,6 +6,11 @@ from functions import *
 from ROOT import TH2D
 import numpy as np
 from step import Step
+
+log = logging.getLogger(__name__)
+logging.getLogger(__name__).setLevel(logging.INFO)
+
+
 class Cut(Step) :
     def __init__(self, step_name) :
         super(Cut, self).__init__(step_name)
@@ -611,7 +616,7 @@ class ZPairDefinitionCut(Cut) :
         super(ZPairDefinitionCut, self).Initialize(Histos, data_name, cut_flow)
 
     def PerformStep(self, event, Histos, data_type) :
-        logging.debug("Called ApplyCut of " + self.name + " cut")
+        log.debug("Called ApplyCut of " + self.name + " cut")
         event.Cuts[self.name] = False
 
         pos_muons       = SeperateByCharge(1,event.goodMuons)
@@ -623,20 +628,26 @@ class ZPairDefinitionCut(Cut) :
             (len(neg_electrons) >= 2 and len(pos_electrons) >= 2) or
             (len(neg_muons) >= 1 and len(pos_muons) >= 1 and
              len(neg_electrons) >= 1 and len(pos_electrons) >=1 )):
+            log.debug("========= Tring to find Z's ===========")
             Z_candidates = ZCandidatesMuEl(neg_muons, pos_muons,neg_electrons, pos_electrons, self.ZLowerMassCut, self.ZUpperMassCut)
-            #print Z_candidates
+            Z_candidates2 = ZCandidates(neg_muons, pos_muons,neg_electrons, pos_electrons, self.ZLowerMassCut, self.ZUpperMassCut)
+           #print Z_candidates
 #print "length: ", len(Z_candidates)
-            if len(Z_candidates) == 2 :
-                logging.debug("Two Z candidates found")
+            if len(Z_candidates) <> len(Z_candidates2) :
+                log.error("ERROR: Z algorithm failed")
+            log.debug("MuEl result: %s", Z_candidates)
+            log.debug("Real result: %s", Z_candidates2)
+            if len(Z_candidates2) == 2 :
+                log.debug("Two Z candidates found")
                 event.Cuts[self.name] = True
                 self.NumberEventsPassedCut += 1.
 
-                Z1 = Z_candidates[0]
+                Z1 = Z_candidates2[0]
                 Z1_p1 = Z1[0].P4()
                 Z1_p2 = Z1[1].P4()
                 Z1Particles = [Z1_p1, Z1_p2]
                 Z1 = Z1_p1 + Z1_p2
-                Z2 = Z_candidates[1]
+                Z2 = Z_candidates2[1]
                 Z2_p1 = Z2[0].P4()
                 Z2_p2 = Z2[1].P4()
                 Z2 = Z2_p1 + Z2_p2

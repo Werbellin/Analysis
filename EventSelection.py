@@ -18,7 +18,8 @@ from cuts import *
 from Event import *
 from upgrade import *
 from step import *
-logger = logging.getLogger('log')
+log = logging.getLogger(__name__)
+logging.getLogger(__name__).setLevel(logging.INFO)
 
 
 class EventSelection :
@@ -26,7 +27,7 @@ class EventSelection :
         self.dataset = dataset
         self._RunName = run_name
 
-        logger.debug("EventSelection constructor called")
+        log.debug("EventSelection constructor called")
         self.ROOTFile = TFile("output/" + self._RunName + "/A-Result.root","RECREATE");
         self.Histos = {}
         self.currentDataset = None
@@ -64,17 +65,17 @@ class EventSelection :
     def BeginSelection(self, data_type) :
         for step in self._StepList[self.currentDataset] :
             if step.PerformStep(self.event, self.Histos[self.currentDataset], data_type) :
-                logger.debug("Event passed " + step.name)
+                log.debug("Event passed " + step.name)
             else :
-                logger.debug("Event failed cut " + step.name)
+                log.debug("Event failed cut " + step.name)
                 return True
 
     def GetEfficencies(self) :
         width = 80
         str_double = "=" * width
         str_single = "-" * width
-        print str_double
-        print "Cutflow efficency analysis"
+        log.info("%s", str_double)
+        log.info("Cutflow efficency analysis")
         print str_single
         data = ("", 0.)
         signal = {}
@@ -137,7 +138,7 @@ class EventSelection :
         for data in self.dataset :
             print "Cutflow for the ", data.name, " dataset:"
             template = "{0:60}|{1:15}|{2:15}|{3:15}|{4:15}" # column widths: 8, 10, 15, 7, 10
-            print str_single
+            log.info("%s",str_single)
             print template.format("Cut name", "Passed","@"+ "{:3.1f}".format(self.luminosity) + "fb-1", "abs.diff", "efficency") # header
             print str_single
             for previous, item, nxt in previous_and_next(self._CutList[data.name]):
@@ -170,7 +171,8 @@ class EventSelection :
                 hist.SetLineColor(data.LineColor)
                 hist.SetMarkerColor(data.LineColor)
                 hist.SetLineWidth(3)
-                #print hist.__dict__
+                print dir(hist)
+                print "norm: ", getattr(hist, "_normalization")
                 #if hist._normalization == "ONE" and hist.Integral() <> 0.:
                 #    hist.Scale(1.0/hist.Integral())
                 #if hist._drawOption <> "" :
