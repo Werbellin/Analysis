@@ -36,12 +36,17 @@ if len(sys.argv) > 1:
     level = LEVELS.get(level_name, logging.NOTSET)
     logging.basicConfig(level=level)
 
-logger = logging.getLogger('log')
-
 from  time import strftime
 RunName = strftime("%Y-%m-%d %H:%M:%S")
 #if not os.path.exists(RunName): 
 os.makedirs("output//" + RunName)
+logging.basicConfig(filename = "output//" + RunName +"//log",
+                    format = "%(message)s",
+                    level = logging.INFO,
+                    disable_existing_loggers = False)
+log = logging.getLogger('log')
+console = logging.StreamHandler()
+logging.getLogger('').addHandler(console)
 
 class Tee(object):
      def __init__(self, *files):
@@ -83,13 +88,13 @@ for dataset in root.findall('dataset') :
     #name     = name + "(" + type + ")"
     files    = root.findall(".//*[@name='" + name + "'][@type='" + type + "']/file")
 
-    print "For dataset ", name, " with cross section of ", xsection, "fb the following files will be processed: "
+    log.info("For dataset %s with cross section of %s fb the following files will be processed:", name, xsection)
     #print files
 
     filelist = []
 
     for file in files :
-        print file.text
+        log.info(file.text)
         filelist.append(file.text)
 
     t_chain = TChain("Delphes")
@@ -102,7 +107,7 @@ for dataset in root.findall('dataset') :
     data = Data(name, xsection, filelist, type, category, totalNumberEvents, line_color)
     RunData.append(data)
 
-print "Finished reading data.xml"
+log.debug("Finished reading data.xml")
 
 newStepList =[  Start("Total events processed"),
                 LeptonTriggerCut("Trigger RunII", l_leading_pt = 22., l_subleading_pt = 10.),
@@ -120,15 +125,16 @@ newStepList =[  Start("Total events processed"),
                #ZZRapidityCut("ZZ y cut"),
                 Z1LeptonPtPlot("Z1 Lepton pT"),
                 GoodLeptonPtEtaPlot("Z leptons"),
-                LeptonIsolationPlot("R of Z Leptons"),
+                #LeptonIsolationPlot("R of Z Leptons"),
                 DefineTaggingJetsCut("DefineTaggingJets", jet_pt = 30.0, jet_eta = 5.2),
                 YStarZZPlot("y_ZZ"),
                 YEtaPlot("yeta"),
                 TaggingJetKinematicsPlot("TJ kinematics"),
                 TaggingJetZKinematicsPlot("TJZ kinematics"),
-                ZKinematics("Kinematics of Z bosons"),
-                ZJetsKinematics("Kinematics of TJ1 and L1/2"),
+                ZKinematicsPlot("Kinematics of Z bosons"),
+                #ZJetsKinematics("Kinematics of TJ1 and L1/2"),
                 ZeppenfeldVariablesPlot("YStar1"),
+                AddCorrelationPlot({'name':'TJDEta', 'bin':100, 'min':-10., 'max':10.}, {'name':'TJM', 'bin':100, 'min':0., 'max':2000.}),
                 TaggingJetRapidityGapCut("Tagging jet rapidity gap 2"),
                 ZZKinematicsPlot("ZZ kinematics boost"),
                 YStarZZPlot("y_ZZ"),
@@ -138,6 +144,7 @@ newStepList =[  Start("Total events processed"),
                 TaggingJetKinematicsPlot("TJ kinematics 3"),
                 TaggingJetInvariantMassCut("Invariant mass of tagging jets"),
                 TaggingJetKinematicsPlot("TJ kinematics 2"),
+                AddCorrelationPlot({'name':'TJDEta', 'bin':100, 'min':-10., 'max':10.}, {'name':'TJM', 'bin':100, 'min':0., 'max':2000.}),
                 TaggingJetInvariantMassCut("Invariant mass of tagging jets 2", mass_cut = 600.),
                 TaggingJetInvariantMassCut("Invariant mass of tagging jets 3", mass_cut = 700.),
                 ZeppenfeldVariablesPlot("YStar1"),
@@ -150,7 +157,7 @@ newStepList =[  Start("Total events processed"),
                 JetMultiplicityPlot("Jet multiplicity"),
                 JetVetoCut("Jet veto"),
                 JetVetoCut("Jet veto 2", pt_cut = 20.),
-                LeptonIsolationPlot("R of Z Leptons"),
+                #LeptonIsolationPlot("R of Z Leptons"),
                 YStarZZPlot("y_ZZ"),
                 ZZKinematicsPlot("ZZ system boost"),
                 GoodLeptonPtEtaPlot("Leptons between jets")]

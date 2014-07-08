@@ -20,12 +20,12 @@ class Event :
             return self.ZZY
 
         if qty_name == "TJDEta" :
-            self.TJDEta = self.TaggingJet1.Eta() - self.TaggingJet2.Eta()
+            self.TJDEta = abs(self.TaggingJet1.Eta() - self.TaggingJet2.Eta())
             return self.TJDEta
 
 
         if qty_name == "TJDY" :
-            self.TJDY = self.TaggingJet1.Rapidity() - self.TaggingJet2.Rapidity()
+            self.TJDY = abs(self.TaggingJet1.Rapidity() - self.TaggingJet2.Rapidity())
             return self.TJDY
 
         if qty_name == "TJM" :
